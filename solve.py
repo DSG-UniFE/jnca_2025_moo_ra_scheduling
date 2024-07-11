@@ -1,4 +1,6 @@
 from mc2 import MC2
+from mc3 import MC3
+
 from mspso import MSPSO
 
 from jmetal.algorithm.multiobjective.nsgaiii import NSGAII, NSGAIII
@@ -110,7 +112,7 @@ if __name__ == '__main__':
     #clusters = ["Cloud", "Fog Tier 2", "Fog Tier 1", "Edge Tier 2", "Edge Tier 1"]
     reference_point = [7000, 300, 0.040]
 
-    problem = MC2()
+    problem = MC3()
     reference_directions_factory = UniformReferenceDirectionFactory(n_dim=3, n_points=30)
 
     algorithm = NSGAII(

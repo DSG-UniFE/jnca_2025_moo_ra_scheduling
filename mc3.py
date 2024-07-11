@@ -7,11 +7,11 @@ import os
 from jmetal.core.problem import IntegerProblem, FloatProblem
 from jmetal.core.solution import IntegerSolution, FloatSolution
 
-class MC2(IntegerProblem):
+class MC3(IntegerProblem):
     """ Multi-Cluster problem """
 
     def __init__(self):
-        super(MC2, self).__init__()
+        super(MC3, self).__init__()
         self.load_requests_data('./cnsm_data/Services.csv')
         self.load_instances_data('./cnsm_data/AWS_EC2_Pricing.csv', './cnsm_data/AWS_EC2_Latency.csv')
         print(f'Number of datacenters: {self.num_datacenters} and number of requests: {self.num_requests}')
@@ -24,9 +24,14 @@ class MC2(IntegerProblem):
         
         print(f'Number of replicas: {self.num_replicas}')
         self.obj_directions = [self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
+
+        # we need to map as variables also the starting time of each requests
+        # the variables will be a vector in which the first part indicate the timing of each request (length will be num_requests)
+        # and the second part indicate the information about replicas
         
-        self.lower_bound = [0 for _ in range(self.num_replicas)]
-        self.upper_bound = [self.num_combinations - 1 for _ in range(self.num_replicas)]
+        # Requests can be activated from 0 to 150
+        self.lower_bound = [0 for _ in range(self.num_requests)] + [0 for _ in range(self.num_replicas)]
+        self.upper_bound = [150 for _ in range(self.num_requests)] + [self.num_combinations - 1 for _ in range(self.num_replicas)]
 
     def number_of_objectives(self) -> int:
         return len(self.obj_directions)
@@ -108,7 +113,17 @@ class MC2(IntegerProblem):
         cpu_violations = 0
         ram_violations = 0
 
-        for idx, value in enumerate(solution.variables):
+        # Since here we are mapping starting time as well, what we need to do is to
+        #  exclude the first part of the variables containing the starting time
+        svariables = solution.variables[self.num_requests:]
+
+        # then to calculate cost we need to use the following code to map replicas to instance
+        # Once we know wich replicas are mapped to which instance we can calculate the cost
+        # To do so we need to get as timing we need to keep instance open from the request 
+        # with the starting time lower than all the others to the request with the starting
+        #  time higher than all the others + duration
+
+        for idx, value in enumerate(svariables):
             dc_idx, instance_idx, price_idx = self.decode(value)
             dc = self.datacenters[dc_idx]
             instance = self.instances[instance_idx]
@@ -119,14 +134,31 @@ class MC2(IntegerProblem):
             dc_instance_key = (dc, instance, price_idx)
             if dc_instance_key not in instance_usage:
                 # cpu and ram are resetted to 0 each time a new instance/bin is opened
-                instance_usage[dc_instance_key] = {'cpu': 0, 'ram': 0, 'count': 0}
-
+                # here we calculate the duration of the request, for each instance is the time this should be open
+                instance_usage[dc_instance_key] = {'cpu': 0, 'ram': 0, 'count': 0, 
+                                                   'active': [], 'costs': []}
+                
             cpu_capacity = self.cpu_capacity[(dc, instance)]
             ram_capacity = self.ram_capacity[(dc, instance)]
+
+            rd = self.requests_duration[request_idx]
+            # we need to find the starting time of the request
+            starting_time = solution.variables[request_idx]
 
             if (instance_usage[dc_instance_key]['cpu'] + cpu_required <= cpu_capacity) and \
             (instance_usage[dc_instance_key]['ram'] + ram_required <= ram_capacity):
                 # Allocate the given instance in the same bin
+                if instance_usage[dc_instance_key]['active'] == []:
+                    instance_usage[dc_instance_key]['active'].append([starting_time, starting_time + rd])
+                else:
+                    # get the current usage
+                    # instance count 
+                    icount = instance_usage[dc_instance_key]['count']
+                    current_usage = instance_usage[dc_instance_key]['active'][icount]
+                    if starting_time < current_usage[0]:
+                        current_usage[0] = starting_time
+                    if starting_time + rd > current_usage[1]:
+                        current_usage[1] = starting_time + rd
                 instance_usage[dc_instance_key]['cpu'] += cpu_required
                 instance_usage[dc_instance_key]['ram'] += ram_required
             else:
@@ -135,19 +167,25 @@ class MC2(IntegerProblem):
                 instance_usage[dc_instance_key]['cpu'] = cpu_required
                 instance_usage[dc_instance_key]['ram'] = ram_required
                 instance_usage[dc_instance_key]['count'] += 1
-                if price_idx == 0:  # On-Demand
-                    total_costs['On-Demand'] += self.cost_on_demand[(dc, instance)] * self.requests_duration[request_idx]
-                elif price_idx == 1:  # Reserved
-                    total_costs['Reserved'] += self.cost_reserved[(dc, instance)]
-                elif price_idx == 2:  # Spot
-                    total_costs['Spot'] += self.cost_spot[(dc, instance)] * self.requests_duration[request_idx]
+                instance_usage[dc_instance_key]['active'].append([starting_time, starting_time + rd])
 
             # Check CPU and RAM violations
             if instance_usage[dc_instance_key]['cpu'] > cpu_capacity:
                 cpu_violations += max(0, instance_usage[dc_instance_key]['cpu'] - cpu_capacity)
             if instance_usage[dc_instance_key]['ram'] > ram_capacity:
                 ram_violations += max(0, instance_usage[dc_instance_key]['ram'] - ram_capacity)
-
+        
+        # Calculate total cost based on the costs of each instance considered its active period
+        for instance_key, values in instance_usage.items():
+            for idx, active_period in enumerate(values['active']):
+                dc, instance, price_idx = instance_key
+                if price_idx == 0:
+                    total_costs['On-Demand'] += self.cost_on_demand[(dc, instance)] * (active_period[1] - active_period[0])
+                elif price_idx == 1:
+                    total_costs['Reserved'] += self.cost_reserved[(dc, instance)]
+                elif price_idx == 2:
+                    total_costs['Spot'] += self.cost_spot[(dc, instance)] * (active_period[1] - active_period[0])
+        
         total_cost = sum(total_costs.values())
         total_costs['total_cost'] = total_cost
 
@@ -156,8 +194,9 @@ class MC2(IntegerProblem):
 
     def calculate_max_latency(self, solution):
         max_latency_per_request = [0] * self.num_requests
-
-        for idx, value in enumerate(solution.variables):
+        # exclude the timing
+        svariables = solution.variables[self.num_requests:]
+        for idx, value in enumerate(svariables):
             request_idx = self.mapping[idx]
             dc_idx, _, _ = self.decode(value)
             dc = self.datacenters[dc_idx]
@@ -171,8 +210,8 @@ class MC2(IntegerProblem):
 
     def calculate_qos(self, solution):
         total_interruption = 0
-        
-        for idx, value in enumerate(solution.variables):
+        svariables = solution.variables[self.num_requests:]
+        for idx, value in enumerate(svariables):
             dc_idx, instance_idx, price_idx = self.decode(value)
             dc = self.datacenters[dc_idx]
             instance = self.instances[instance_idx]
@@ -205,7 +244,9 @@ class MC2(IntegerProblem):
     def check_number_of_replicas(self, solution):
         replicas_count = [0] * self.num_requests
         replicas_penalty = [0] * self.num_requests
-        for idx, value in enumerate(solution.variables):
+        # exclude the timing
+        svariables = solution.variables[self.num_requests:]
+        for idx, value in enumerate(svariables):
             request_idx = self.mapping[idx]
             replicas_count[request_idx] += 1
 
