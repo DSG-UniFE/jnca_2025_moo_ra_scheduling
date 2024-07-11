@@ -21,6 +21,10 @@ import seaborn as sns
 from collections import defaultdict
 import pandas as pd
 
+# For HV calculation
+from jmetal.core.quality_indicator import HyperVolume
+import numpy as np
+
 
 def logplot_front(front, algorithm):
 
@@ -103,7 +107,8 @@ if __name__ == '__main__':
     
     freeze_support()
 
-    clusters = ["Cloud", "Fog Tier 2", "Fog Tier 1", "Edge Tier 2", "Edge Tier 1"]
+    #clusters = ["Cloud", "Fog Tier 2", "Fog Tier 1", "Edge Tier 2", "Edge Tier 1"]
+    reference_point = [7000, 300, 0.040]
 
     problem = MC2()
     reference_directions_factory = UniformReferenceDirectionFactory(n_dim=3, n_points=30)
@@ -123,12 +128,18 @@ if __name__ == '__main__':
     algorithm.run()
 
     front = get_non_dominated_solutions(algorithm.result())
+    # compute expects a numpy array
+    objsnsgaii = [s.objectives for s in front]
+    hv = HyperVolume(reference_point)
+    hv_value = hv.compute(np.array(objsnsgaii))
+    print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
+
     for idx,s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
         _, _, _, data = problem.calculate_costs(s)
         plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
-        
+
     logplot_front(front, algorithm)
 
     algorithm = NSGAIII(
@@ -146,6 +157,14 @@ if __name__ == '__main__':
     algorithm.run()
 
     front = get_non_dominated_solutions(algorithm.result())
+
+    # compute expects a numpy array
+    objsnsgaiii = [s.objectives for s in front]
+    hv = HyperVolume(reference_point)
+    hv_value = hv.compute(np.array(objsnsgaiii))
+    print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
+
+
     for idx, s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
@@ -162,8 +181,15 @@ if __name__ == '__main__':
     )
 
     algorithm.run()
-
     front = get_non_dominated_solutions(algorithm.result())
+
+    # compute expects a numpy array
+    objsmspso = [s.objectives for s in front]
+    hv = HyperVolume(reference_point)
+    hv_value = hv.compute(np.array(objsmspso))
+    print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
+
+
     for idx, s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
@@ -171,3 +197,17 @@ if __name__ == '__main__':
         plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
 
     logplot_front(front, algorithm)
+
+    # Put all objs into a numpy array
+    objs = np.array(objsnsgaii + objsnsgaiii + objsmspso)
+    reference_point = objs.max(axis=0) * 1.1
+    reference_point = reference_point.tolist()
+
+    hv = HyperVolume(reference_point)
+    hv_nsgaii = hv.compute(np.array(objsnsgaii))
+    hv_nsgaiii = hv.compute(np.array(objsnsgaiii))
+    hv_mspso = hv.compute(np.array(objsmspso))
+    print(f'Reference Point: {reference_point}')
+    print(f'NSGAII Hypervolume: {hv_nsgaii}')
+    print(f'NSGAIII Hypervolume: {hv_nsgaiii}')
+    print(f'MSPSO Hypervolume: {hv_mspso}')
