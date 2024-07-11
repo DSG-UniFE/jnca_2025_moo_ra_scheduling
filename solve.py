@@ -93,7 +93,7 @@ def plot_instance_usage(data, filename: str):
 
     # FacetGrid for Data Center
     g = sns.FacetGrid(plot_data, col='Data Center', col_wrap=3, height=5, sharey=False)
-    g.map_dataframe(sns.barplot, x='Instance Size', y='Count', hue='Pricing Type', 
+    g.map_dataframe(sns.barplot, x='Instance Size', y='# Instances', hue='Pricing Type', 
                     hue_order=pricing_order, errorbar=None, palette=colorblind_palette)
     g.add_legend(title='Pricing Type')
     g.set_titles(col_template='{col_name}')
