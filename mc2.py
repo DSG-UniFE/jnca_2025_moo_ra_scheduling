@@ -118,7 +118,15 @@ class MC2(IntegerProblem):
 
             dc_instance_key = (dc, instance, price_idx)
             if dc_instance_key not in instance_usage:
+                # cpu and ram are resetted to 0 each time a new instance/bin is opened
                 instance_usage[dc_instance_key] = {'cpu': 0, 'ram': 0, 'count': 0}
+                # opening a new instance => add the cost
+                if price_idx == 0:  # On-Demand
+                    total_costs['On-Demand'] += self.cost_on_demand[(dc, instance)] * self.requests_duration[request_idx]
+                elif price_idx == 1:  # Reserved
+                    total_costs['Reserved'] += self.cost_reserved[(dc, instance)]
+                elif price_idx == 2:  # Spot
+                    total_costs['Spot'] += self.cost_spot[(dc, instance)] * self.requests_duration[request_idx]
 
             cpu_capacity = self.cpu_capacity[(dc, instance)]
             ram_capacity = self.ram_capacity[(dc, instance)]
@@ -130,6 +138,7 @@ class MC2(IntegerProblem):
                 instance_usage[dc_instance_key]['ram'] += ram_required
             else:
                 # Allocate the instance to a different instance
+                # And then add the cost
                 instance_usage[dc_instance_key]['cpu'] = cpu_required
                 instance_usage[dc_instance_key]['ram'] = ram_required
                 instance_usage[dc_instance_key]['count'] += 1
@@ -140,34 +149,16 @@ class MC2(IntegerProblem):
                 elif price_idx == 2:  # Spot
                     total_costs['Spot'] += self.cost_spot[(dc, instance)] * self.requests_duration[request_idx]
 
-            # Controllo delle violazioni di CPU e RAM
+            # Check CPU and RAM violations
             if instance_usage[dc_instance_key]['cpu'] > cpu_capacity:
-                cpu_violations += instance_usage[dc_instance_key]['cpu'] - cpu_capacity
+                cpu_violations += max(0, instance_usage[dc_instance_key]['cpu'] - cpu_capacity)
             if instance_usage[dc_instance_key]['ram'] > ram_capacity:
-                ram_violations += instance_usage[dc_instance_key]['ram'] - ram_capacity
+                ram_violations += max(0, instance_usage[dc_instance_key]['ram'] - ram_capacity)
 
         total_cost = sum(total_costs.values())
         total_costs['total_cost'] = total_cost
 
-        return total_cost, cpu_violations, ram_violations
-
-    
-    def calculate_instance_usage(self, solution):
-        instance_usage_count = {}
-
-        for idx, value in enumerate(solution.variables):
-            dc_idx, instance_idx, price_idx = self.decode(value)
-            dc = self.datacenters[dc_idx]
-            instance = self.instances[instance_idx]
-            price_type = ['On-Demand', 'Reserved', 'Spot'][price_idx]
-            key = (dc, instance, price_type)
-            
-            if key not in instance_usage_count:
-                instance_usage_count[key] = 0
-
-            instance_usage_count[key] += 1
-
-        return instance_usage_count
+        return total_cost, cpu_violations, ram_violations, instance_usage
 
 
     def calculate_max_latency(self, solution):
@@ -203,7 +194,7 @@ class MC2(IntegerProblem):
 
     def evaluate(self, solution: IntegerSolution) -> IntegerSolution:
         max_latency = self.calculate_max_latency(solution)
-        total_cost, cpu_violations, ram_violations = self.calculate_costs(solution)
+        total_cost, cpu_violations, ram_violations, _ = self.calculate_costs(solution)
         qos = self.calculate_qos(solution)
         
         solution.objectives[0] = max_latency

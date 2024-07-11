@@ -44,42 +44,44 @@ def logplot_front(front, algorithm):
     plt.ylabel('f2')
     plt.title(f"{algorithm.get_name()}-MCP-f1-f2")
     plt.savefig(f"{algorithm.get_name()}-MCP-f1-f2.png")
+    plt.close()
     plt.scatter(front_f1, front_f3, color='#236FA4')
     plt.xlabel('f1')
     plt.ylabel('f3')
     plt.title(f"{algorithm.get_name()}-MCP-f1-f3")
     plt.savefig(f"{algorithm.get_name()}-MCP-f1-f3.png")
+    plt.close()
     plt.scatter(front_f2, front_f3, color='#236FA4')
     plt.xlabel('f2')
     plt.ylabel('f3')
     plt.title(f"{algorithm.get_name()}-MCP-f2-f3")
     plt.savefig(f"{algorithm.get_name()}-MCP-f2-f3.png")
+    plt.close()
 
 
 def plot_instance_usage(data, filename: str):
     data_centers = []
-    instances = []
+    instance_sizes = []
     price_types = []
     counts = []
-    instance_sizes = []
     
-    for (dc, instance, price_type), count in data.items():
+    for (dc, instance, price_type), values in data.items():
         data_centers.append(dc)
-        instances.append(instance)
+        instance_sizes.append(instance.split('.')[-1])  # Getting dimension (e.g. large, small, 2xlarge)
         price_types.append(price_type)
-        counts.append(count)
-        # Getting dimension (e.g. large, small, 2xlarge)
-        instance_size = instance.split('.')[-1]
-        instance_sizes.append(instance_size)
+        counts.append(values['count'])
     
     plot_data = pd.DataFrame({
         'Data Center': data_centers,
-        'Instance Type': instances,
         'Instance Size': instance_sizes,
         'Pricing Type': price_types,
         'Count': counts
     })
 
+    # Mapping numeric pricing types to string labels
+    pricing_type_labels = {0: 'On-Demand', 1: 'Reserved', 2: 'Spot'}
+    plot_data['Pricing Type'] = plot_data['Pricing Type'].map(pricing_type_labels)
+    
     pricing_order = ['On-Demand', 'Reserved', 'Spot']
     colorblind_palette = sns.color_palette("colorblind", len(pricing_order))
 
@@ -95,6 +97,7 @@ def plot_instance_usage(data, filename: str):
             label.set_rotation(45)
     plt.tight_layout()
     plt.savefig(filename)
+    plt.close()
 
 if __name__ == '__main__':
     
@@ -123,8 +126,9 @@ if __name__ == '__main__':
     for idx,s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
-        plot_instance_usage(problem.calculate_instance_usage(s), f"{algorithm.get_name()}_{idx}.png")
-
+        _, _, _, data = problem.calculate_costs(s)
+        plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
+        
     logplot_front(front, algorithm)
 
     algorithm = NSGAIII(
@@ -145,7 +149,8 @@ if __name__ == '__main__':
     for idx, s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
-        plot_instance_usage(problem.calculate_instance_usage(s), f"{algorithm.get_name()}_{idx}.png")
+        _, _, _, data = problem.calculate_costs(s)
+        plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
     
     logplot_front(front, algorithm)
 
@@ -162,6 +167,7 @@ if __name__ == '__main__':
     for idx, s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
-        plot_instance_usage(problem.calculate_instance_usage(s), f"{algorithm.get_name()}_{idx}.png")
+        _, _, _, data = problem.calculate_costs(s)
+        plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
 
     logplot_front(front, algorithm)
