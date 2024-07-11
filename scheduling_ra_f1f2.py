@@ -7,11 +7,11 @@ import os
 from jmetal.core.problem import IntegerProblem, FloatProblem
 from jmetal.core.solution import IntegerSolution, FloatSolution
 
-class MC3(IntegerProblem):
+class SchedulingRAF1F2(IntegerProblem):
     """ Multi-Cluster problem """
 
     def __init__(self):
-        super(MC3, self).__init__()
+        super(SchedulingRAF1F2, self).__init__()
         self.load_requests_data('./cnsm_data/Services.csv')
         self.load_instances_data('./cnsm_data/AWS_EC2_Pricing.csv', './cnsm_data/AWS_EC2_Latency.csv')
         print(f'Number of datacenters: {self.num_datacenters} and number of requests: {self.num_requests}')
@@ -23,7 +23,7 @@ class MC3(IntegerProblem):
         self.num_combinations = self.num_datacenters * 3 * 3  # 3 tipi di istanza, 3 prezzi (on-demand, reserved, spot)
         
         print(f'Number of replicas: {self.num_replicas}')
-        self.obj_directions = [self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
+        self.obj_directions = [self.MINIMIZE, self.MINIMIZE]
 
         # we need to map as variables also the starting time of each requests
         # the variables will be a vector in which the first part indicate the timing of each request (length will be num_requests)
@@ -239,12 +239,11 @@ class MC3(IntegerProblem):
 
     def evaluate(self, solution: IntegerSolution) -> IntegerSolution:
         max_latency = self.calculate_max_latency(solution)
-        total_cost, cpu_violations, ram_violations, _ = self.calculate_costs(solution)
+        tc, cpu_violations, ram_violations, _ = self.calculate_costs(solution)
         qos = self.calculate_qos(solution)
         
         solution.objectives[0] = max_latency
-        solution.objectives[1] = total_cost
-        solution.objectives[2] = qos
+        solution.objectives[1] = tc
         
         # Imposta i vincoli come violazioni (più violazioni => peggio è)
         solution.constraints[0] = self.check_number_of_replicas(solution)
@@ -272,4 +271,4 @@ class MC3(IntegerProblem):
         return 3
 
     def name(self):
-        return "MultiCluster"
+        return "Scheduling_RA_F1F2"

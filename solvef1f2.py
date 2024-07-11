@@ -1,4 +1,4 @@
-from mc3 import MC3
+from scheduling_ra_f1f2 import SchedulingRAF1F2
 
 from mspso import MSPSO
 
@@ -38,31 +38,7 @@ def logplot_front(front, algorithm):
     print(f"Computing time: {algorithm.total_computing_time}")
 
     plot_front = Plot(title='Pareto front approximation', axis_labels=['f1', 'f2', 'f3'])
-    plot_front.plot(front, label=f"{algorithm.get_name()}-MultiCluster-Problem", filename=f"{algorithm.get_name()}-MultiCluster4", format='png')
-    # let's get the front for f1-f2, f1-f3, f2-f3
-    front_f1 = [s.objectives[0] for s in front]
-    front_f2 = [s.objectives[1] for s in front]
-    front_f3 = [s.objectives[2] for s in front]
-    from matplotlib import pyplot as plt
-    plt.scatter(front_f1, front_f2, color='#236FA4')
-    plt.xlabel('f1')
-    plt.ylabel('f2')
-    plt.title(f"{algorithm.get_name()}-MCP-f1-f2")
-    plt.savefig(f"{algorithm.get_name()}-MCP-f1-f2.png")
-    plt.close()
-    plt.scatter(front_f1, front_f3, color='#236FA4')
-    plt.xlabel('f1')
-    plt.ylabel('f3')
-    plt.title(f"{algorithm.get_name()}-MCP-f1-f3")
-    plt.savefig(f"{algorithm.get_name()}-MCP-f1-f3.png")
-    plt.close()
-    plt.scatter(front_f2, front_f3, color='#236FA4')
-    plt.xlabel('f2')
-    plt.ylabel('f3')
-    plt.title(f"{algorithm.get_name()}-MCP-f2-f3")
-    plt.savefig(f"{algorithm.get_name()}-MCP-f2-f3.png")
-    plt.close()
-
+    plot_front.plot(front, label=f"{algorithm.get_name()}-f1-f2", filename=f"{algorithm.get_name()}-f1-f2", format='png')
 
 def plot_instance_usage(data, filename: str):
     data_centers = []
@@ -107,13 +83,11 @@ if __name__ == '__main__':
     
     freeze_support()
 
-    #clusters = ["Cloud", "Fog Tier 2", "Fog Tier 1", "Edge Tier 2", "Edge Tier 1"]
-    reference_point = [7000, 300, 0.040]
 
-    problem = MC3()
+    problem = SchedulingRAF1F2()
     problem_name = problem.name()
-    reference_directions_factory = UniformReferenceDirectionFactory(n_dim=3, n_points=30)
 
+    reference_directions_factory = UniformReferenceDirectionFactory(n_dim=2, n_points=30)
     algorithm = NSGAII(
         problem=problem,
         population_evaluator=MultiprocessEvaluator(processes=8),
@@ -125,23 +99,18 @@ if __name__ == '__main__':
         dominance_comparator=DominanceWithConstraintsComparator()
     )
 
-
     algorithm.run()
-
-    front = get_non_dominated_solutions(algorithm.result())
+    front = get_non_dominated_solutions(algorithm.result())    
     # compute expects a numpy array
     objsnsgaii = [s.objectives for s in front]
-    hv = HyperVolume(reference_point)
-    hv_value = hv.compute(np.array(objsnsgaii))
-    print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
 
     for idx,s in enumerate(front):
-        print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
-        s.number_of_objectives = 3
+        s.number_of_objectives = 2
         _, _, _, data = problem.calculate_costs(s)
-        plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
-
+        plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f1_f2_{idx}.png")
+    
     logplot_front(front, algorithm)
+
 
     algorithm = NSGAIII(
         problem=problem,
@@ -156,24 +125,19 @@ if __name__ == '__main__':
 
 
     algorithm.run()
-
     front = get_non_dominated_solutions(algorithm.result())
 
     # compute expects a numpy array
     objsnsgaiii = [s.objectives for s in front]
-    hv = HyperVolume(reference_point)
-    hv_value = hv.compute(np.array(objsnsgaiii))
-    print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
-
 
     for idx, s in enumerate(front):
-        print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
-        s.number_of_objectives = 3
+        s.number_of_objectives = 2
         _, _, _, data = problem.calculate_costs(s)
-        plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
-    
+        plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f1_f2_{idx}.png")
+
     logplot_front(front, algorithm)
 
+    
     algorithm = MSPSO(
         problem=problem,
         swarm_evaluator=MultiprocessEvaluator(processes=8),
@@ -186,17 +150,12 @@ if __name__ == '__main__':
 
     # compute expects a numpy array
     objsmspso = [s.objectives for s in front]
-    hv = HyperVolume(reference_point)
-    hv_value = hv.compute(np.array(objsmspso))
-    print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
-
 
     for idx, s in enumerate(front):
-        print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
-        s.number_of_objectives = 3
+        s.number_of_objectives = 2
         _, _, _, data = problem.calculate_costs(s)
-        plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
-
+        plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f1_f2_{idx}.png")
+    
     logplot_front(front, algorithm)
 
     # Put all objs into a numpy array
