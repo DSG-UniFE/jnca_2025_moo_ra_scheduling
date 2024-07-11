@@ -22,7 +22,8 @@ from collections import defaultdict
 import pandas as pd
 
 
-def logplot_pareto_front(front, algorithm):
+def logplot_front(front, algorithm):
+
     print(f'Total non-dominated solutions: {len(front)}')
     print_function_values_to_file(front, f"{algorithm.get_name()}.FUN." + algorithm.label)
     print_variables_to_file(front,f"{algorithm.get_name()}.VAR." + algorithm.label)
@@ -54,8 +55,8 @@ def logplot_pareto_front(front, algorithm):
     plt.title(f"{algorithm.get_name()}-MCP-f2-f3")
     plt.savefig(f"{algorithm.get_name()}-MCP-f2-f3.png")
 
-def plot_instance_usage(data, filename: str):
 
+def plot_instance_usage(data, filename: str):
     data_centers = []
     instances = []
     price_types = []
@@ -67,11 +68,10 @@ def plot_instance_usage(data, filename: str):
         instances.append(instance)
         price_types.append(price_type)
         counts.append(count)
-        # Get instance dimension (small, large, 2xlarge)
+        # Getting dimension (e.g. large, small, 2xlarge)
         instance_size = instance.split('.')[-1]
         instance_sizes.append(instance_size)
     
-    # Create a DataFrame for plotting
     plot_data = pd.DataFrame({
         'Data Center': data_centers,
         'Instance Type': instances,
@@ -79,10 +79,14 @@ def plot_instance_usage(data, filename: str):
         'Pricing Type': price_types,
         'Count': counts
     })
-    
-    # FacetGrid for plotting
+
+    pricing_order = ['On-Demand', 'Reserved', 'Spot']
+    colorblind_palette = sns.color_palette("colorblind", len(pricing_order))
+
+    # FacetGrid for Data Center
     g = sns.FacetGrid(plot_data, col='Data Center', col_wrap=3, height=5, sharey=False)
-    g.map_dataframe(sns.barplot, x='Instance Size', y='# Instances', hue='Pricing Type', ci=None)
+    g.map_dataframe(sns.barplot, x='Instance Size', y='Count', hue='Pricing Type', 
+                    hue_order=pricing_order, errorbar=None, palette=colorblind_palette)
     g.add_legend(title='Pricing Type')
     g.set_titles(col_template='{col_name}')
     g.set_axis_labels('Instance Size', 'Count')
@@ -92,11 +96,11 @@ def plot_instance_usage(data, filename: str):
     plt.tight_layout()
     plt.savefig(filename)
 
-
 if __name__ == '__main__':
-    # this is to enable the parallel evaluation of the solutions
-    # with Dask or Multiprocessing
+    
     freeze_support()
+
+    clusters = ["Cloud", "Fog Tier 2", "Fog Tier 1", "Edge Tier 2", "Edge Tier 1"]
 
     problem = MC2()
     reference_directions_factory = UniformReferenceDirectionFactory(n_dim=3, n_points=30)
@@ -121,7 +125,7 @@ if __name__ == '__main__':
         s.number_of_objectives = 3
         plot_instance_usage(problem.calculate_instance_usage(s), f"{algorithm.get_name()}_{idx}.png")
 
-    logplot_pareto_front(front, algorithm)
+    logplot_front(front, algorithm)
 
     algorithm = NSGAIII(
         problem=problem,
@@ -143,7 +147,7 @@ if __name__ == '__main__':
         s.number_of_objectives = 3
         plot_instance_usage(problem.calculate_instance_usage(s), f"{algorithm.get_name()}_{idx}.png")
     
-    logplot_pareto_front(front, algorithm)
+    logplot_front(front, algorithm)
 
     algorithm = MSPSO(
         problem=problem,
@@ -160,4 +164,4 @@ if __name__ == '__main__':
         s.number_of_objectives = 3
         plot_instance_usage(problem.calculate_instance_usage(s), f"{algorithm.get_name()}_{idx}.png")
 
-    logplot_pareto_front(front, algorithm)
+    logplot_front(front, algorithm)

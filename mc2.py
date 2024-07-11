@@ -123,13 +123,13 @@ class MC2(IntegerProblem):
             cpu_capacity = self.cpu_capacity[(dc, instance)]
             ram_capacity = self.ram_capacity[(dc, instance)]
 
-            if (instance_usage[dc_instance_key]['cpu'] + cpu_required <= cpu_capacity) or \
+            if (instance_usage[dc_instance_key]['cpu'] + cpu_required <= cpu_capacity) and \
             (instance_usage[dc_instance_key]['ram'] + ram_required <= ram_capacity):
-                # Allocare risorse su un'istanza esistente
+                # Allocate the given instance in the same bin
                 instance_usage[dc_instance_key]['cpu'] += cpu_required
                 instance_usage[dc_instance_key]['ram'] += ram_required
             else:
-                # Creare una nuova istanza
+                # Allocate the instance to a different instance
                 instance_usage[dc_instance_key]['cpu'] = cpu_required
                 instance_usage[dc_instance_key]['ram'] = ram_required
                 instance_usage[dc_instance_key]['count'] += 1
