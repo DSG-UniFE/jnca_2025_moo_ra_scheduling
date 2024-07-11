@@ -1,2 +1,4 @@
 jmetalpy
 dask
+seaborn
+pandas
