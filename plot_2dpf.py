@@ -27,6 +27,7 @@ import numpy as np
 import argparse
 from scipy.spatial import ConvexHull
 from matplotlib import pyplot as plt
+import glob
 
 
 '''
@@ -46,43 +47,45 @@ def parse_args():
 Plot the Pareto front starting from the list of solutions
 Visualize also the convex hull of the front
 '''
-def plot_front_hull(front, alg_name, problem_name):
+def plot_front_hull(front, alg_name, x_label, y_label):
     # Convert front to a numpy array
     front = np.array(front)
     # get x_label and y_label
-    x_label, y_label = problem_name.split('-')
-    plt.title(f'Pareto Front - {alg_name}')
+    plt.title(f'{alg_name}')
     plt.xlabel(x_label)
     plt.ylabel(y_label)
+    plt.ylim(100, 1100)
+    plt.xlim(70, 170)
     plt.scatter(front[:,0], front[:,1], color='#236FA4')
     # Create the Convex hull using Scipy
     hull = ConvexHull(front)
     for simplex in hull.simplices:
         plt.plot(front[simplex, 0], front[simplex, 1], 'r--')
-    plt.show()
-    plt.savefig(f"Fig-{alg_name}-{problem_name}.pdf")
-    #plt.close()
+    #plt.show()
+    plt.savefig(f"Fig-{alg_name}-{x_label}-{y_label}.pdf")
+    plt.close()
+
+'''
+Using glob find all the files in the directory that contains
+VAR and a string given as argument
+'''
+def find_files(pattern):
+    files = glob.glob(f'*FUN*{pattern}')
+    return files    
 
 def main():
-    args = parse_args()
-    filename = args.filename
-    problemname = args.problem
-    if problemname == 'f1-f2':
-        problem = SchedulingRAF1F2()
-    elif problemname == 'f2-f3':
-        problem = SchedulingRAF2F3()
-    else:  
-        print('Problem not recognized, available problems are f1f2 and f2f3')
-        exit(1)
-
-    solutions = read_solutions(filename)
-    print(f'Number of solutions: {len(solutions)}')
-    for s in solutions:
-        print(s.objectives)
-    # Getting the objective values
-    objective_values = [s.objectives for s in solutions]
-    algname = filename.split('.')[0]
-    plot_front_hull(objective_values, algname, problemname)
+    src_str = 'F1F2'
+    files = find_files(src_str)
+    for filename in files:
+        print(files)
+        solutions = read_solutions(filename)
+        #print(f'Number of solutions: {len(solutions)}')
+        # Getting the objective values
+        objective_values = [s.objectives for s in solutions]
+        algname = filename.split('.')[0]
+        xlabel = src_str[0:2].lower()
+        ylabel = src_str[2:4].lower()
+        plot_front_hull(objective_values, algname, xlabel, ylabel)
 
 if __name__ == '__main__':
     main()
