@@ -54,8 +54,12 @@ def plot_front_hull(front, alg_name, x_label, y_label):
     plt.title(f'{alg_name}')
     plt.xlabel(x_label)
     plt.ylabel(y_label)
+    # for f2-f3
+    #plt.xlim(200, 1000)
+    #plt.ylim(0, 0.045)
     plt.ylim(100, 1100)
     plt.xlim(70, 170)
+    plt.grid(True)
     plt.scatter(front[:,0], front[:,1], color='#236FA4')
     # Create the Convex hull using Scipy
     hull = ConvexHull(front)
