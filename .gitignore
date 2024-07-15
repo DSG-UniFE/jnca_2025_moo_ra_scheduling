@@ -30,6 +30,8 @@ MANIFEST
 *FUN*
 *.png
 *.pdf
+*.DS_Store
+*.zip 
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
