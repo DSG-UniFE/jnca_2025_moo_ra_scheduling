@@ -33,6 +33,26 @@ import glob
 # the merged list
 
 from jmetal.util.solution import get_non_dominated_solutions
+from jmetal.core.quality_indicator import HyperVolume
+
+'''
+Sparsity calculation according to the paper
+ Xu et al., Prediction-guided multi-objective reinforcement 
+ learning for continuous robot control.
+ Front is the list of solutions and num_objective is the number of objectives
+ Sort the lists based on the objectives and calculate the sparsity
+'''
+def sparsity_calculation(front, num_objective):
+    # retrieve the solutions
+    objs = [s.objectives for s in front]
+    # calculate the sparsity
+    sparsity = 0
+    for j in range(0, num_objective):
+        objs = sorted(objs, key=lambda x: x[j])
+        for i in range(0, len(objs) - 1):
+            sparsity += (objs[i][j] - objs[i + 1][j]) ** 2
+    return sparsity / (len(objs) - 1)
+
 
 '''
 Parse the arguments from command line.
@@ -87,8 +107,13 @@ def plot_2fronts_hull(objs, alg_name, x_label, y_label, fdescr):
         y_label = 'Deployment Costs (f2)'
     elif y_label == 'f3':
         y_label = 'Avg. Interruption Frequency (f3)'
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
+    plt.figure(figsize=(12, 6))
+    plt.xlabel(x_label, fontdict={'fontsize': 20})
+    plt.ylabel(y_label, fontdict={'fontsize': 20})
+    # Increase label size
+    plt.tick_params(axis='both', which='major', labelsize=16)
+    # Increase the size of xlabel and ylabel
+
     # for f2-f3
     #plt.xlim(200, 1000)
     #plt.ylim(0, 0.045)
@@ -101,14 +126,15 @@ def plot_2fronts_hull(objs, alg_name, x_label, y_label, fdescr):
     for idx, os in enumerate(objs):
         if len(os) != 0:
             front = np.array(os)
-            plt.scatter(front[:,0], front[:,1], color=colors[idx], marker=markers[idx], alpha=0.8)
+            plt.scatter(front[:,0], front[:,1], color=colors[idx], marker=markers[idx], s=100, alpha=0.8)
             legend.append(alg_name[idx])
     
     # Create the Convex hull using Scipy
     #hull = ConvexHull(front)
     #for simplex in hull.simplices:
     #    plt.plot(front[simplex, 0], front[simplex, 1], 'r--')
-    plt.legend(legend)
+    plt.legend(legend, fontsize=20)
+    plt.tight_layout()
     #plt.show()
     plt.savefig(f"Fig-{fdescr}.pdf")
     plt.close()
@@ -134,9 +160,21 @@ def main():
     print(files)
     xlabel = 'f1'
     ylabel = 'f2'
+    objsnsgaii = []
+    objsnsgaiii = []
+    objsmspso = []
+    print("Analzying Objectives f1-f2")
     for filename in files:
         print(filename)
         solution = read_solutions(filename)
+        sparsity = sparsity_calculation(solution, 2)
+        print (f"Sparsity: {sparsity}")
+        if 'NSGAII.' in filename:
+            objsnsgaii = [s.objectives for s in solution]
+        elif 'NSGAIII.' in filename:
+            objsnsgaiii = [s.objectives for s in solution]
+        elif 'MSPSO' in filename:
+            objsmspso = [s.objectives for s in solution]
         solutions.extend(solution)
         print(f'Number of solutions: {len(solution)}, {type(solution)}')
         # Getting the objective values
@@ -145,6 +183,20 @@ def main():
         algname = filename.split('.')[0]
         algs.append(algname)
     plot_2fronts_hull(objs_values, algs, xlabel, ylabel, 'f1f2-ensemble')
+    objs = np.array(objsnsgaii + objsnsgaiii + objsmspso)
+    reference_point = objs.max(axis=0) * 1.1
+    reference_point = reference_point.tolist()
+    print(f'Len of objsnsgaii: {len(objsnsgaii)} objsnsgaiii: {len(objsnsgaiii)} mspso: {len(objsmspso)}')
+    hv = HyperVolume(reference_point)
+    hv_nsgaii = hv.compute(np.array(objsnsgaii))
+    hv_nsgaiii = hv.compute(np.array(objsnsgaiii))
+    hv_mspso = hv.compute(np.array(objsmspso))
+    print(f'Reference Point: {reference_point}')
+    print(f'NSGAII Hypervolume: {hv_nsgaii}')
+    print(f'NSGAIII Hypervolume: {hv_nsgaiii}')
+    print(f'MSPSO Hypervolume: {hv_mspso}')
+
+
 
     #plot_2fronts_hull(objs_values, algs, xlabel, ylabel)
     # Then merge the three fronts and get the non-dominated solutions
@@ -180,9 +232,21 @@ def main():
     print(files)
     xlabel = 'f2'
     ylabel = 'f3'
+    objsnsgaii = []
+    objsnsgaiii = []
+    objsmspso = []
+    print("Analzying Objectives f2-f3")
     for filename in files:
         print(filename)
         solution = read_solutions(filename)
+        sparsity = sparsity_calculation(solution, 2)
+        print (f"Sparsity: {sparsity}")
+        if 'NSGAII.' in filename:
+            objsnsgaii = [s.objectives for s in solution]
+        elif 'NSGAIII.' in filename:
+            objsnsgaiii = [s.objectives for s in solution]
+        elif 'MSPSO' in filename:
+            objsmspso = [s.objectives for s in solution]
         solutions.extend(solution)
         print(f'Number of solutions: {len(solution)}, {type(solution)}')
         # Getting the objective values
@@ -191,6 +255,21 @@ def main():
         algname = filename.split('.')[0]
         algs.append(algname)
     plot_2fronts_hull(objs_values, algs, xlabel, ylabel, 'f2f3-ensemble')
+    # Put all objs into a numpy array
+    #objs = np.array(objsnsgaii + objsnsgaiii + objsmspso)
+    #
+    objs = np.array(objsnsgaii + objsnsgaiii + objsmspso)
+    reference_point = objs.max(axis=0) * 1.1
+    reference_point = reference_point.tolist()
+    print(f'Len of objsnsgaii: {len(objsnsgaii)} objsnsgaiii: {len(objsnsgaiii)} mspso: {len(objsmspso)}')
+    hv = HyperVolume(reference_point)
+    hv_nsgaii = hv.compute(np.array(objsnsgaii))
+    hv_nsgaiii = hv.compute(np.array(objsnsgaiii))
+    hv_mspso = hv.compute(np.array(objsmspso))
+    print(f'Reference Point: {reference_point}')
+    print(f'NSGAII Hypervolume: {hv_nsgaii}')
+    print(f'NSGAIII Hypervolume: {hv_nsgaiii}')
+    print(f'MSPSO Hypervolume: {hv_mspso}')
 
     #plot_2fronts_hull(objs_values, algs, xlabel, ylabel)
     # Then merge the three fronts and get the non-dominated solutions
@@ -213,8 +292,10 @@ def main():
                 elif idx == 2:
                     mspso_front.append(o)
     objs_values = [nsgaii_front, nsgaiii_front, mspso_front]
-    print(objs_values)
+    #print(objs_values)
     plot_2fronts_hull(objs_values, algs, xlabel, ylabel, 'f2f3-ensemble-nd')
+
+
 
 
 if __name__ == '__main__':
