@@ -1,0 +1,5 @@
+usecase,name,cpu,ram,gpu,duration,location,replicas,latency
+vr,capturing,2,2,8,10,eu-south-1,2,120
+vr,preprocessing,4,4,0,20,eu-west-2,3,30
+vr,decoding,3,3,0,15,eu-west-2,6,20
+vr,rendering,4,4,12,5,us-east-1,4,10

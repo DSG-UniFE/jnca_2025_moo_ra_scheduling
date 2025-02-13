@@ -1,0 +1,4 @@
+usecase,name,cpu,ram,gpu,duration,location,replicas,latency
+iiot,datacollection,1,2,0,5,eu-south-1,5,5
+iiot,preprocessing,3,4,0,10,ap-northeast-3,3,10
+iiot,anomaly,4,6,8,20,ap-south-1,2,15
