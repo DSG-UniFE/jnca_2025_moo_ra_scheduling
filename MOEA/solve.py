@@ -77,14 +77,14 @@ def plot_instance_usage(data, filename: str):
     
     for (dc, instance, price_type), values in data.items():
         data_centers.append(dc)
-        instance_sizes.append(instance.split('.')[-1])  # Getting dimension (e.g. large, small, 2xlarge)
+        instance_sizes.append(instance)  # Getting dimension (e.g. large, small, 2xlarge)
         price_types.append(price_type)
         counts.append(values['count'])
     
     plot_data = pd.DataFrame({
         'Data Center': data_centers,
-        'Instance Size': instance_sizes,
-        'Pricing Type': price_types,
+        'Instance Type': instance_sizes,
+        'Pricing': price_types,
         'Count': counts
     })
 
@@ -149,7 +149,7 @@ if __name__ == '__main__':
 
     algorithm = NSGAII(
         problem=problem,
-        population_evaluator=MultiprocessEvaluator(processes=1),
+        population_evaluator=MultiprocessEvaluator(processes=8),
         population_size=150,
         offspring_population_size=80,
         mutation=IntegerPolynomialMutation(probability=0.6, distribution_index=30),
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     for idx,s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
-        _, _, _, _, _, data = problem.calculate_costs(s)
+        _, _, _, _, data = problem.calculate_costs(s)
         plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
 
     logplot_front(front, algorithm)
