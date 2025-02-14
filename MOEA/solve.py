@@ -1,4 +1,4 @@
-from mc3 import MC3
+from moo_ra_3 import MooRa3
 
 from mspso import MSPSO
 
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     #clusters = ["Cloud", "Fog Tier 2", "Fog Tier 1", "Edge Tier 2", "Edge Tier 1"]
     reference_point = [7000, 300, 0.040]
 
-    problem = MC3()
+    problem = MooRa3()
     problem_name = problem.name()
 
     algorithm = MOCell(
@@ -141,16 +141,15 @@ if __name__ == '__main__':
     for idx,s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
-        _, _, _, data = problem.calculate_costs(s)
+        _, _, _, _, data = problem.calculate_costs(s)
         plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
 
     logplot_front(front, algorithm)
 
 
-
     algorithm = NSGAII(
         problem=problem,
-        population_evaluator=MultiprocessEvaluator(processes=8),
+        population_evaluator=MultiprocessEvaluator(processes=1),
         population_size=150,
         offspring_population_size=80,
         mutation=IntegerPolynomialMutation(probability=0.6, distribution_index=30),
@@ -172,7 +171,7 @@ if __name__ == '__main__':
     for idx,s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
-        _, _, _, data = problem.calculate_costs(s)
+        _, _, _, _, _, data = problem.calculate_costs(s)
         plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
 
     logplot_front(front, algorithm)
@@ -207,7 +206,7 @@ if __name__ == '__main__':
     for idx, s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
-        _, _, _, data = problem.calculate_costs(s)
+        _, _, _, _, data = problem.calculate_costs(s)
         plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
     
     logplot_front(front, algorithm)
@@ -232,7 +231,7 @@ if __name__ == '__main__':
     for idx, s in enumerate(front):
         print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
         s.number_of_objectives = 3
-        _, _, _, data = problem.calculate_costs(s)
+        _, _, _, _, data = problem.calculate_costs(s)
         plot_instance_usage(data, f"{algorithm.get_name()}_{idx}.png")
 
     logplot_front(front, algorithm)

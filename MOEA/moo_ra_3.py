@@ -7,20 +7,20 @@ import os
 from jmetal.core.problem import IntegerProblem, FloatProblem
 from jmetal.core.solution import IntegerSolution, FloatSolution
 
-class MC3(IntegerProblem):
+class MooRa3(IntegerProblem):
     """ Multi-Cluster problem """
 
     def __init__(self):
-        super(MC3, self).__init__()
-        self.load_requests_data('./cnsm_data/Services.csv')
-        self.load_instances_data('./cnsm_data/AWS_EC2_Pricing.csv', './cnsm_data/AWS_EC2_Latency.csv')
+        super(MooRa3, self).__init__()
+        self.load_requests_data('./MOEA/cnsm_data/Services.csv')
+        self.load_instances_data('./MOEA/cnsm_data/pricing.csv', './MOEA/cnsm_data/AWS_EC2_Latency.csv')
         print(f'Number of datacenters: {self.num_datacenters} and number of requests: {self.num_requests}')
         
         # Calcola il numero totale di repliche
         self.num_replicas = sum(self.replicas.values())
         self.mapping = self.create_replica_mapping()
         
-        self.num_combinations = self.num_datacenters * 3 * 3  # 3 tipi di istanza, 3 prezzi (on-demand, reserved, spot)
+        self.num_combinations = self.num_datacenters * 6 * 3  # 6 instance types, 3 prices (on-demand, reserved, spot)
         
         print(f'Number of replicas: {self.num_replicas}')
         self.obj_directions = [self.MINIMIZE, self.MINIMIZE, self.MINIMIZE]
@@ -32,6 +32,7 @@ class MC3(IntegerProblem):
         # Requests can be activated from 0 to 150
         self.lower_bound = [0 for _ in range(self.num_requests)] + [0 for _ in range(self.num_replicas)]
         self.upper_bound = [150 for _ in range(self.num_requests)] + [self.num_combinations - 1 for _ in range(self.num_replicas)]
+        print(f'Number of variables: {len(self.lower_bound)}')
 
     def number_of_objectives(self) -> int:
         return len(self.obj_directions)
@@ -50,18 +51,24 @@ class MC3(IntegerProblem):
     def load_requests_data(self, service_file):
         self.services = pd.read_csv(service_file)
         
+        self.requests_use_case = {}
         self.requests_cpu = {}
         self.requests_ram = {}
+        self.requests_gpu = {}
         self.requests_duration = {}
         self.requests_location = {}
         self.replicas = {}
+        self.requests_latency = {}
 
         for idx, row in self.services.iterrows():
+            self.requests_use_case[idx] = row['usecase']
             self.requests_cpu[idx] = row['cpu']
             self.requests_ram[idx] = row['ram']
+            self.requests_gpu[idx] = row['gpu']
             self.requests_duration[idx] = row['duration']
             self.requests_location[idx] = row['location']
             self.replicas[idx] = row['replicas']
+            self.requests_latency[idx] = row['latency']
 
         self.num_requests = len(self.requests_cpu)
     
@@ -78,6 +85,7 @@ class MC3(IntegerProblem):
         self.cost_spot = {}
         self.cpu_capacity = {}
         self.ram_capacity = {}
+        self.gpu_capacity = {}
         self.interrupt_rate = {}
 
         for idx, row in self.pricing.iterrows():
@@ -87,6 +95,7 @@ class MC3(IntegerProblem):
             self.cost_spot[dc_instance] = row['Spot']
             self.cpu_capacity[dc_instance] = row['vCPU']
             self.ram_capacity[dc_instance] = row['RAM']
+            self.gpu_capacity[dc_instance] = row['GPU']
             self.interrupt_rate[dc_instance] = row['InterruptFrequency'] / 100
 
         # Latency dictionary
@@ -99,19 +108,25 @@ class MC3(IntegerProblem):
         self.num_datacenters = len(self.datacenters)
     
     def encode(self, dc_idx, instance_idx, price_idx):
-        return dc_idx * 9 + instance_idx * 3 + price_idx
+        # 6 instance types
+        # 18 slots per datacenter in the encoding vector
+        # 3 combination of prices: on-demand, reserved, spot
+        #print(f'dc_idx: {dc_idx}, instance_idx: {instance_idx}, price_idx: {price_idx}')
+        return dc_idx * 18 + instance_idx * 3 + price_idx
 
     def decode(self, value):
-        dc_idx = value // 9
-        instance_idx = (value % 9) // 3
+        dc_idx = value // 18
+        instance_idx = (value % 18) // 3
         price_idx = value % 3
         return dc_idx, instance_idx, price_idx
      
     def calculate_costs(self, solution):
         total_costs = {'On-Demand': 0, 'Reserved': 0, 'Spot': 0}
-        instance_usage = {}  # Traccia l'uso delle istanze
+        instance_usage = {}  # Track instance usage for each bin
+        # Initialize violations
         cpu_violations = 0
         ram_violations = 0
+        gpu_violations = 0
 
         # Since here we are mapping starting time as well, what we need to do is to
         #  exclude the first part of the variables containing the starting time
@@ -139,16 +154,18 @@ class MC3(IntegerProblem):
             request_idx = self.mapping[idx]
             cpu_required = self.requests_cpu[request_idx]
             ram_required = self.requests_ram[request_idx]
+            gpu_required = self.requests_gpu[request_idx]
 
             dc_instance_key = (dc, instance, price_idx)
             if dc_instance_key not in instance_usage:
                 # cpu and ram are resetted to 0 each time a new instance/bin is opened
                 # here we calculate the duration of the request, for each instance is the time this should be open
-                instance_usage[dc_instance_key] = {'cpu': 0, 'ram': 0, 'count': 0, 
+                instance_usage[dc_instance_key] = {'cpu': 0, 'ram': 0, 'gpu': 0, 'count': 0, 
                                                    'active': [], 'costs': []}
                 
             cpu_capacity = self.cpu_capacity[(dc, instance)]
             ram_capacity = self.ram_capacity[(dc, instance)]
+            gpu_capacity = self.gpu_capacity[(dc, instance)]
 
             rd = self.requests_duration[request_idx]
             # we need to find the starting time of the request
@@ -156,14 +173,19 @@ class MC3(IntegerProblem):
             ending_time = starting_time + rd
 
             if (instance_usage[dc_instance_key]['cpu'] + cpu_required <= cpu_capacity) and \
-            (instance_usage[dc_instance_key]['ram'] + ram_required <= ram_capacity):
+            (instance_usage[dc_instance_key]['ram'] + ram_required <= ram_capacity) and \
+            (instance_usage[dc_instance_key]['gpu'] + gpu_required <= gpu_capacity):
                 # Allocate the given instance in the same bin
                 if instance_usage[dc_instance_key]['active'] == []:
                     instance_usage[dc_instance_key]['active'].append([starting_time, ending_time])
+                    instance_usage[dc_instance_key]['count'] += 1
                 else:
                     # get the current usage
                     # instance count 
-                    icount = instance_usage[dc_instance_key]['count']
+                    icount = instance_usage[dc_instance_key]['count'] - 1
+                    #print(f'icount: {icount}')
+                    #print(f'dc_instance_key: {dc_instance_key}')
+                    #print("instance_usage: ", instance_usage[dc_instance_key])
                     current_usage = instance_usage[dc_instance_key]['active'][icount]
                     if starting_time < current_usage[0]:
                         current_usage[0] = starting_time
@@ -172,11 +194,13 @@ class MC3(IntegerProblem):
                     instance_usage[dc_instance_key]['active'][icount] = current_usage
                 instance_usage[dc_instance_key]['cpu'] += cpu_required
                 instance_usage[dc_instance_key]['ram'] += ram_required
+                instance_usage[dc_instance_key]['gpu'] += gpu_required
             else:
                 # Allocate the instance to a different instance
                 # And then add the cost
                 instance_usage[dc_instance_key]['cpu'] = cpu_required
                 instance_usage[dc_instance_key]['ram'] = ram_required
+                instance_usage[dc_instance_key]['gpu'] = gpu_required
                 instance_usage[dc_instance_key]['count'] += 1
                 instance_usage[dc_instance_key]['active'].append([starting_time, starting_time + rd])
 
@@ -185,6 +209,8 @@ class MC3(IntegerProblem):
                 cpu_violations += max(0, instance_usage[dc_instance_key]['cpu'] - cpu_capacity)
             if instance_usage[dc_instance_key]['ram'] > ram_capacity:
                 ram_violations += max(0, instance_usage[dc_instance_key]['ram'] - ram_capacity)
+            if instance_usage[dc_instance_key]['gpu'] > gpu_capacity:
+                gpu_violations += max(0, instance_usage[dc_instance_key]['gpu'] - gpu_capacity)
         
         # Calculate total cost based on the costs of each instance considered its active period
         for instance_key, values in instance_usage.items():
@@ -201,7 +227,7 @@ class MC3(IntegerProblem):
         total_cost = sum(total_costs.values())
         total_costs['total_cost'] = total_cost
 
-        return total_cost, cpu_violations, ram_violations, instance_usage
+        return total_cost, cpu_violations, ram_violations, gpu_violations, instance_usage
 
 
     def calculate_max_latency(self, solution):
@@ -221,6 +247,25 @@ class MC3(IntegerProblem):
         # return the average max_latency per request
         return sum(max_latency_per_request) / self.num_requests
 
+    # This is an additional constraint on latency -- 
+    # each request specified a maximum latency which should not be exceeded
+    def latency_violations(self, solution):
+        latency_violations = 0
+        # exclude the timing
+        svariables = solution.variables[self.num_requests:]
+        for idx, value in enumerate(svariables):
+            request_idx = self.mapping[idx]
+            dc_idx, _, _ = self.decode(value)
+            dc = self.datacenters[dc_idx]
+            request_location = self.requests_location[request_idx]
+            
+            latency = self.latency_lookup[(request_location, dc)]
+            if latency > self.requests_latency[request_idx]:
+                latency_violations += (latency - self.requests_latency[request_idx])
+        
+        return latency_violations
+    
+
     def calculate_qos(self, solution):
         total_interruption = 0
         svariables = solution.variables[self.num_requests:]
@@ -239,8 +284,9 @@ class MC3(IntegerProblem):
 
     def evaluate(self, solution: IntegerSolution) -> IntegerSolution:
         max_latency = self.calculate_max_latency(solution)
-        total_cost, cpu_violations, ram_violations, _ = self.calculate_costs(solution)
+        total_cost, cpu_violations, ram_violations, gpu_violations, _ = self.calculate_costs(solution)
         qos = self.calculate_qos(solution)
+        latency_violations = self.latency_violations(solution)
         
         solution.objectives[0] = max_latency
         solution.objectives[1] = total_cost
@@ -250,6 +296,9 @@ class MC3(IntegerProblem):
         solution.constraints[0] = self.check_number_of_replicas(solution)
         solution.constraints[1] = cpu_violations
         solution.constraints[2] = ram_violations
+        solution.constraints[3] = gpu_violations
+        solution.constraints[4] = latency_violations
+
         
         return solution
 
@@ -269,7 +318,7 @@ class MC3(IntegerProblem):
         return sum(replicas_penalty)
 
     def number_of_constraints(self):
-        return 3
+        return 5
 
     def name(self):
-        return "MultiCluster"
+        return "MultiClusterGPU"
