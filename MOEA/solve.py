@@ -117,7 +117,7 @@ if __name__ == '__main__':
     #clusters = ["Cloud", "Fog Tier 2", "Fog Tier 1", "Edge Tier 2", "Edge Tier 1"]
     reference_point = [7000, 300, 0.040]
 
-    problem = MooRa3()
+    problem = MooRa3('./cnsm_data/Services.csv')
     problem_name = problem.name()
 
     algorithm = MOCell(

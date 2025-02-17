@@ -7,13 +7,14 @@ import os
 from jmetal.core.problem import IntegerProblem, FloatProblem
 from jmetal.core.solution import IntegerSolution, FloatSolution
 
+#add service file in the constructor
 class MooRa3(IntegerProblem):
     """ Multi-Cluster problem """
 
-    def __init__(self):
+    def __init__(self, service_file):
         super(MooRa3, self).__init__()
-        self.load_requests_data('./MOEA/cnsm_data/Services.csv')
-        self.load_instances_data('./MOEA/cnsm_data/pricing.csv', './MOEA/cnsm_data/AWS_EC2_Latency.csv')
+        self.load_requests_data(service_file)
+        self.load_instances_data('./cnsm_data/pricing.csv', './cnsm_data/AWS_EC2_Latency.csv')
         print(f'Number of datacenters: {self.num_datacenters} and number of requests: {self.num_requests}')
         
         # Calcola il numero totale di repliche
