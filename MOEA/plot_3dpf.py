@@ -95,12 +95,14 @@ def sparsity_calculation(front, num_objective):
     return sparsity / (len(objs) - 1)
 
 def main():
-    src_str = 'MultiCluster'
+    src_str = 'MultiClusterGPU'
     files = find_files(src_str)
     objsnsgaii = []
     objsnsgaiii = []
     objsmspso = []
     for filename in files:
+        if '.png' in filename:
+            continue
         print(filename)
         solutions = read_solutions(filename)
         sparsity = sparsity_calculation(solutions, 3)
