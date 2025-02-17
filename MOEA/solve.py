@@ -90,17 +90,19 @@ def plot_instance_usage(data, filename: str):
 
     # Mapping numeric pricing types to string labels
     pricing_type_labels = {0: 'On-Demand', 1: 'Reserved', 2: 'Spot'}
-    plot_data['Pricing Type'] = plot_data['Pricing Type'].map(pricing_type_labels)
+    plot_data['Pricing'] = plot_data['Pricing'].map(pricing_type_labels)
     
     pricing_order = ['On-Demand', 'Reserved', 'Spot']
     colorblind_palette = sns.color_palette("colorblind", len(pricing_order))
 
+    #print(plot_data)
+
     # FacetGrid for Data Center
     g = sns.FacetGrid(plot_data, col='Data Center', col_wrap=3, height=5, sharey=False)
-    g.map_dataframe(sns.barplot, x='Instance Size', y='Count', hue='Pricing Type', hue_order=pricing_order, errorbar=None, palette=colorblind_palette)
-    g.add_legend(title='Pricing Type')
+    g.map_dataframe(sns.barplot, x='Instance Type', y='Count', hue='Pricing', hue_order=pricing_order, errorbar=None, palette=colorblind_palette)
+    g.add_legend(title='Pricing')
     g.set_titles(col_template='{col_name}')
-    g.set_axis_labels('Instance Size', '# Instances')
+    g.set_axis_labels('Instance Type', '# Instances')
     for ax in g.axes.flat:
         for label in ax.get_xticklabels():
             label.set_rotation(45)
