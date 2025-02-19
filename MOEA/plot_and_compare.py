@@ -98,74 +98,77 @@ def sparsity_calculation(front, num_objective):
     return sparsity / (len(objs) - 1)
 
 def main():
-    objectives_files_meta = glob.glob('results/*/*.FUN.*')
+    # Glob for each direcory within results
+    dir_usecases = glob.glob('results/*/')
     ##### Metaheuristics metrics computation #####
     
     #src_str = 'MultiClusterGPU'
     #files = find_files(src_str)
-    objsmocell = []
-    objsnsgaii = []
-    objsnsgaiii = []
-    objsmspso = []
-    for filename in objectives_files_meta:
-        #if '.png' in filename:
-        #    continue
-        print(filename) 
-        output_dir = os.path.dirname(filename)
-        output_file_sparsity = os.path.join(output_dir, "sparsity.txt")
-        output_file_hv = os.path.join(output_dir, "hypervolume.txt")
-        solutions = read_solutions(filename)
-        sparsity = sparsity_calculation(solutions, 3)
-        #print(f'Number of solutions: {len(solutions)}')
-        # Getting the objective values
-        objective_values = [s.objectives for s in solutions]
-        #base_name = os.path.splitext(os.path.basename(filename))[0]
-       
-        if 'MOCell.' in filename:
-            objsmocell = objective_values
-            algname = 'MOCell'
-            with open(output_file_sparsity, "a") as f:
-                f.write(f"{algname} Sparsity: {sparsity}\n")
-        elif 'NSGAII.' in filename:
-            objsnsgaii = objective_values
-            algname = 'NSGAII'
-            with open(output_file_sparsity, "a") as f:
-                f.write(f"{algname} Sparsity: {sparsity}\n")
-        elif 'NSGAIII.' in filename:
-            objsnsgaiii = objective_values
-            algname = 'NSGAIII'
-            with open(output_file_sparsity, "a") as f:
-                f.write(f"{algname} Sparsity: {sparsity}\n")
-        elif 'MSPSO' in filename:
-            objsmspso = objective_values
-            algname = 'MSPSO'
-            with open(output_file_sparsity, "a") as f:
-                f.write(f"{algname} Sparsity: {sparsity}\n")
 
-        #algname = filename.split('.')[0]
-        #xlabel = src_str[0:2].lower()
-        #ylabel = src_str[2:4].lower()
-        plot_3d_front(objective_values, algname, output_dir)#, xlabel, ylabel)
+
+    for usecase in dir_usecases:
+        usecase = usecase.split('/')[1]
+        print(f'Usecase: {usecase}')
+        objectives_files_meta = glob.glob(f'results/{usecase}/*.FUN.*')
+        objsmocell = []
+        objsnsgaii = []
+        objsnsgaiii = []
+        objsmspso = []
+        for filename in objectives_files_meta:
+            #if '.png' in filename:
+            #    continue
+            print(filename) 
+            output_dir = os.path.dirname(filename)
+            output_file_sparsity = os.path.join(output_dir, "sparsity.txt")
+            output_file_hv = os.path.join(output_dir, "hypervolume.txt")
+            f_sparsity = open(output_file_sparsity, "w")
+            solutions = read_solutions(filename)
+            sparsity = sparsity_calculation(solutions, 3)
+            #print(f'Number of solutions: {len(solutions)}')
+            # Getting the objective values
+            objective_values = [s.objectives for s in solutions]
+            #base_name = os.path.splitext(os.path.basename(filename))[0]
+        
+            if 'MOCell.' in filename:
+                objsmocell = objective_values
+                algname = 'MOCell'
+                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+            elif 'NSGAII.' in filename:
+                objsnsgaii = objective_values
+                algname = 'NSGAII'
+                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+            elif 'NSGAIII.' in filename:
+                objsnsgaiii = objective_values
+                algname = 'NSGAIII'
+                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+            elif 'MSPSO' in filename:
+                objsmspso = objective_values
+                algname = 'MSPSO'
+                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+
+            #algname = filename.split('.')[0]
+            #xlabel = src_str[0:2].lower()
+            #ylabel = src_str[2:4].lower()
+            plot_3d_front(objective_values, algname, output_dir)#, xlabel, ylabel)
 
         # Put all objs into a numpy array
         objs = np.array(objsmocell + objsnsgaii + objsnsgaiii + objsmspso)
+        
         reference_point = objs.max(axis=0) * 1.1
         reference_point = reference_point.tolist()
         print(f'Len of objsnsgaii: {len(objsnsgaii)} objsnsgaiii: {len(objsnsgaiii)} mspso: {len(objsmspso)}')
-        
         hv = HyperVolume(reference_point)
         hv_mocell = hv.compute(np.array(objsmocell))
         hv_nsgaii = hv.compute(np.array(objsnsgaii))
         hv_nsgaiii = hv.compute(np.array(objsnsgaiii))
         hv_mspso = hv.compute(np.array(objsmspso))
-        
+
         with open(output_file_hv, "w") as f:
             #f.write(f"Reference Point: {reference_point}\n")
             f.write(f"MOCell Hypervolume: {hv_mocell}\n")
             f.write(f"NSGAII Hypervolume: {hv_nsgaii}\n")
             f.write(f"NSGAIII Hypervolume: {hv_nsgaiii}\n")
             f.write(f"MSPSO Hypervolume: {hv_mspso}\n")
-
 
     ##### MO-ILP Metrics Computation #####
     objectives_files_ilp = glob.glob('../results/usecase/*/objectives*.csv')
