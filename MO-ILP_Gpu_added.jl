@@ -244,6 +244,10 @@ for gap in mip_gaps
     cost = value(f2)
     unavailability = value(f3)
 
+    println("latency: ", latency, " ms")
+	println("cost: ", cost, "")
+	println("unavailability: ", unavailability, "")
+
 	println("Load Time: ", load_time, " seconds")
 	println("Creation Time: ", creation_time, " seconds")
 	println("Execution Time: ", execution_time, " seconds")
@@ -253,9 +257,9 @@ for gap in mip_gaps
 					Load_Time = load_time,
 					Creation_time = creation_time,
 					Execution_Time = execution_time,
-					Latency = latency,
-					Cost = cost,
-					Unavailability = unavailability))
+					Latency = [value(f1; result = i) for i in 1:result_count(model)],
+					Cost = [value(f2; result = i) for i in 1:result_count(model)],
+					Unavailability = [value(f3; result = i) for i in 1:result_count(model)]))
 
 	# print summary model
 	println(solution_summary(model))
@@ -283,6 +287,7 @@ for gap in mip_gaps
 
 	# Combine objectives into tuples
 	objectives = [(latency[i], cost[i], unavailability[i]) for i in eachindex(latency)]
+	println("Objective values: ", objectives, "")
 
 	# Compute Pareto front
 	pareto_solutions = compute_pareto_front(objectives)
@@ -291,6 +296,10 @@ for gap in mip_gaps
 	pareto_latency = [sol[1] for sol in pareto_solutions]
 	pareto_cost = [sol[2] for sol in pareto_solutions]
 	pareto_unavailability = [sol[3] for sol in pareto_solutions]
+
+	println("pareto_latency values: ", pareto_latency, "")
+	println("pareto_cost values: ", pareto_cost, "")
+	println("pareto_unavailability values: ", pareto_unavailability, "")
 
 	# print summary model
 	println(solution_summary(model))
