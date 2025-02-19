@@ -1,11 +1,37 @@
 using Markdown
 using InteractiveUtils
-
-using JuMP, DataFrames, CSV, Gurobi, Plots
+using JuMP
+using DataFrames
+using CSV
+using Gurobi
+using Plots
+using BenchmarkTools
 
 import MultiObjectiveAlgorithms as MOA
 import MathOptInterface as MOI
-using BenchmarkTools
+
+# Function to check if one solution dominates another
+function dominates(sol1, sol2)
+    return all(sol1 .≤ sol2) && any(sol1 .< sol2)
+end
+
+# Function to compute Pareto front
+function compute_pareto_front(objectives)
+    pareto_front = []
+    for i in eachindex(objectives)
+        is_dominated = false
+        for j in eachindex(objectives)
+            if i != j && dominates(objectives[j], objectives[i])
+                is_dominated = true
+                break
+            end
+        end
+        if !is_dominated
+            push!(pareto_front, objectives[i])
+        end
+    end
+    return pareto_front
+end
 
 function save_solution_from_summary(model, filename="solution.csv")
     # Get solution summary (this prints details, but doesn't return values)
@@ -240,10 +266,59 @@ for gap in mip_gaps
     [value(f3; result = i) for i in 1:result_count(model)];
     xlabel = "Latency",
     ylabel = "Cost",
-	zlabel = "Unavailability"
+	zlabel = "Unavailability",
+	markersize = 5,      # Adjust marker size
+    markerstrokewidth = 0.5,  # Edge around points
+    markerstrokecolor = :black,  # Improve visibility
+    color = :blues,      # Use a color gradient
+    camera = (30, 60)    # Adjust camera view angle
 	)
 
 	savefig(plot, results_path * "plot_gap_$(gap)_usecase_$(usecase).png")
+
+	# Extract objective values
+	latency = [value(f1; result = i) for i in 1:result_count(model)]
+	cost = [value(f2; result = i) for i in 1:result_count(model)]
+	unavailability = [value(f3; result = i) for i in 1:result_count(model)]
+
+	# Combine objectives into tuples
+	objectives = [(latency[i], cost[i], unavailability[i]) for i in eachindex(latency)]
+
+	# Compute Pareto front
+	pareto_solutions = compute_pareto_front(objectives)
+
+	# Extract Pareto-optimal points
+	pareto_latency = [sol[1] for sol in pareto_solutions]
+	pareto_cost = [sol[2] for sol in pareto_solutions]
+	pareto_unavailability = [sol[3] for sol in pareto_solutions]
+
+	# print summary model
+	println(solution_summary(model))
+
+	# Plot all solutions
+	plot = Plots.scatter3d(
+		latency, cost, unavailability;
+		xlabel = "Latency",
+		ylabel = "Cost",
+		zlabel = "Unavailability",
+		markersize = 5,
+		markerstrokewidth = 0.5,
+		markerstrokecolor = :black,
+		color = :blues,
+		camera = (30, 60),
+		label = "All Solutions"
+	)
+
+	# Overlay Pareto front with red markers
+	Plots.scatter3d!(
+		pareto_latency, pareto_cost, pareto_unavailability;
+		color = :red,
+		markersize = 7,
+		label = "Pareto Front"
+	)
+
+	# Save the figure
+	savefig(plot, results_path * "pareto_plot_gap_$(gap)_usecase_$(usecase).png")
 
     # Save solution summary for this gap
     save_solution_from_summary(model, "solution_summary_gap_$(gap)_usecase_$(usecase).csv")
