@@ -107,6 +107,9 @@ def main():
 
 
     for usecase in dir_usecases:
+        output_dir = os.path.dirname(usecase)
+        output_file_sparsity = os.path.join(output_dir, "sparsity.txt")
+        f_sparsity = open(output_file_sparsity, "w")
         usecase = usecase.split('/')[1]
         print(f'Usecase: {usecase}')
         objectives_files_meta = glob.glob(f'results/{usecase}/*.FUN.*')
@@ -118,10 +121,8 @@ def main():
             #if '.png' in filename:
             #    continue
             print(filename) 
-            output_dir = os.path.dirname(filename)
-            output_file_sparsity = os.path.join(output_dir, "sparsity.txt")
             output_file_hv = os.path.join(output_dir, "hypervolume.txt")
-            f_sparsity = open(output_file_sparsity, "w")
+            
             solutions = read_solutions(filename)
             sparsity = sparsity_calculation(solutions, 3)
             #print(f'Number of solutions: {len(solutions)}')
