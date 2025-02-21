@@ -7,6 +7,7 @@ from jmetal.operator import IntegerPolynomialMutation, IntegerSBXCrossover
 from jmetal.util.comparator import DominanceWithConstraintsComparator
 from jmetal.util.evaluator import DaskEvaluator, MultiprocessEvaluator
 from jmetal.util.termination_criterion import StoppingByEvaluations
+from jmetal.core.quality_indicator import InvertedGenerationalDistance
 
 from jmetal.util.solution import get_non_dominated_solutions
 from jmetal.util.solution import (
@@ -156,8 +157,11 @@ def main():
         os.makedirs(output_dir_sparsities, exist_ok=True)
         output_dir_hv = os.path.dirname('../hypervolumes/')
         os.makedirs(output_dir_hv, exist_ok=True)
+        output_dir_igds = os.path.dirname('../igds/')
+        os.makedirs(output_dir_igds, exist_ok=True)
         output_file_sparsity = os.path.join(output_dir_sparsities, f"sparsity_{usecase_name}.txt")
         output_file_hv = os.path.join(output_dir_hv, f"hypervolume_{usecase_name}.txt")
+        output_file_igd = os.path.join(output_dir_igds, f"igd_{usecase_name}.txt")
         f_sparsity = open(output_file_sparsity, "w")
         usecase = usecase.split('/')[1]
         print(f'Usecase: {usecase}')
@@ -215,7 +219,7 @@ def main():
             sparsity = sparsity_calculation(solutions, 3)
             f_sparsity.write(f"ILP Gap {gap} Sparsity: {sparsity}\n")
 
-            if gap == '0.00':
+            if gap == '0.0':
                 objsilpgap00 = [s.objectives for s in solutions]
             elif gap == '0.05':
                 objsilpgap005 = [s.objectives for s in solutions]
@@ -240,6 +244,16 @@ def main():
         hv_moilp_gap01 = hv.compute(np.array(objsilpgap01))
         hv_moilp_gap025 = hv.compute(np.array(objsilpgap025))
 
+        igd = InvertedGenerationalDistance(objs)
+        igd_mocell = igd.compute(np.array(objsmocell))
+        igd_nsgaii = igd.compute(np.array(objsnsgaii))
+        igd_nsgaiii = igd.compute(np.array(objsnsgaiii))
+        igd_mspso = igd.compute(np.array(objsmspso))
+        igd_moilp_gap00 = igd.compute(np.array(objsilpgap00))
+        igd_moilp_gap005 = igd.compute(np.array(objsilpgap005))
+        igd_moilp_gap01 = igd.compute(np.array(objsilpgap01))
+        igd_moilp_gap025 = igd.compute(np.array(objsilpgap025))
+        
         with open(output_file_hv, "w") as f:
             #f.write(f"Reference Point: {reference_point}\n")
             f.write(f"MOCell Hypervolume: {hv_mocell}\n")
@@ -251,6 +265,17 @@ def main():
             f.write(f"ILP Gap 0.05 Hypervolume: {hv_moilp_gap005}\n")
             f.write(f"ILP Gap 0.1 Hypervolume: {hv_moilp_gap01}\n")
             f.write(f"ILP Gap 0.25 Hypervolume: {hv_moilp_gap025}\n")
+
+        with open(output_file_igd, "w") as f:
+            f.write(f"MOCell IGD: {igd_mocell}\n")
+            f.write(f"NSGAII IGD: {igd_nsgaii}\n")
+            f.write(f"NSGAIII IGD: {igd_nsgaiii}\n")
+            f.write(f"MSPSO IGD: {igd_mspso}\n")
+            f.write(f"\n\n********** ILP **********\n\n")
+            f.write(f"ILP Gap 0.0 IGD: {igd_moilp_gap00}\n")
+            f.write(f"ILP Gap 0.05 IGD: {igd_moilp_gap005}\n")
+            f.write(f"ILP Gap 0.1 IGD: {igd_moilp_gap01}\n")
+            f.write(f"ILP Gap 0.25 IGD: {igd_moilp_gap025}\n")
 
 
 if __name__ == '__main__':
