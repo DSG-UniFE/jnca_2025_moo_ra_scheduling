@@ -1,4 +1,5 @@
 from scheduling_ra_f1f2 import SchedulingRAF1F2
+from moo_ra_f1f2 import MooRaF1F2
 
 from mspso import MSPSO
 
@@ -84,7 +85,8 @@ if __name__ == '__main__':
     freeze_support()
 
 
-    problem = SchedulingRAF1F2()
+    #problem = SchedulingRAF1F2()
+    problem = MooRaF1F2()
     problem_name = problem.name()
 
     reference_directions_factory = UniformReferenceDirectionFactory(n_dim=2, n_points=30)
@@ -106,7 +108,7 @@ if __name__ == '__main__':
 
     for idx,s in enumerate(front):
         s.number_of_objectives = 2
-        _, _, _, data = problem.calculate_costs(s)
+        _, _, _, _, data = problem.calculate_costs(s)
         plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f1_f2_{idx}.png")
     
     logplot_front(front, algorithm)
@@ -132,7 +134,7 @@ if __name__ == '__main__':
 
     for idx, s in enumerate(front):
         s.number_of_objectives = 2
-        _, _, _, data = problem.calculate_costs(s)
+        _, _, _, _, data = problem.calculate_costs(s)
         plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f1_f2_{idx}.png")
 
     logplot_front(front, algorithm)
@@ -153,7 +155,7 @@ if __name__ == '__main__':
 
     for idx, s in enumerate(front):
         s.number_of_objectives = 2
-        _, _, _, data = problem.calculate_costs(s)
+        _, _, _, _, data = problem.calculate_costs(s)
         plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f1_f2_{idx}.png")
     
     logplot_front(front, algorithm)
