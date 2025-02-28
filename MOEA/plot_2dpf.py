@@ -120,8 +120,8 @@ def plot_2fronts_hull(objs, alg_name, x_label, y_label, fdescr):
     #plt.ylim(100, 1100)
     #plt.xlim(70, 170)
     plt.grid(True)
-    colors = ['#236FA4', '#F46036', '#D0D0D0']
-    markers = ['o', 's', '^']
+    colors = ['#236FA4', '#F46036', '#D0D0D0', '#1A1A1A']
+    markers = ['o', 's', '^', 'D']
     legend = []
     for idx, os in enumerate(objs):
         if len(os) != 0:
@@ -157,6 +157,7 @@ def main():
     files = find_files(f'NSGAII.*FUN*{src_str}')
     files.extend(find_files(f'NSGAIII.*FUN*{src_str}'))
     files.extend(find_files(f'MSPSO.*FUN*{src_str}'))
+    files.extend(find_files(f'MOCell.*FUN*{src_str}'))
     print(files)
     xlabel = 'f1'
     ylabel = 'f2'
@@ -175,6 +176,8 @@ def main():
             objsnsgaiii = [s.objectives for s in solution]
         elif 'MSPSO' in filename:
             objsmspso = [s.objectives for s in solution]
+        elif 'MOCell' in filename:
+            objsmocell = [s.objectives for s in solution]
         solutions.extend(solution)
         print(f'Number of solutions: {len(solution)}, {type(solution)}')
         # Getting the objective values
@@ -182,19 +185,22 @@ def main():
         objs_values.append(objs)
         algname = filename.split('.')[0]
         algs.append(algname)
+    print(objs_values)
     plot_2fronts_hull(objs_values, algs, xlabel, ylabel, 'f1f2-ensemble')
-    objs = np.array(objsnsgaii + objsnsgaiii + objsmspso)
+    objs = np.array(objsnsgaii + objsnsgaiii + objsmspso + objsmocell)
     reference_point = objs.max(axis=0) * 1.1
     reference_point = reference_point.tolist()
-    print(f'Len of objsnsgaii: {len(objsnsgaii)} objsnsgaiii: {len(objsnsgaiii)} mspso: {len(objsmspso)}')
+    print(f'Len of objsnsgaii: {len(objsnsgaii)} objsnsgaiii: {len(objsnsgaiii)} mspso: {len(objsmspso)} mocell: {len(objsmocell)}')
     hv = HyperVolume(reference_point)
     hv_nsgaii = hv.compute(np.array(objsnsgaii))
     hv_nsgaiii = hv.compute(np.array(objsnsgaiii))
     hv_mspso = hv.compute(np.array(objsmspso))
+    hv_mocell = hv.compute(np.array(objsmocell))
     print(f'Reference Point: {reference_point}')
     print(f'NSGAII Hypervolume: {hv_nsgaii}')
     print(f'NSGAIII Hypervolume: {hv_nsgaiii}')
     print(f'MSPSO Hypervolume: {hv_mspso}')
+    print(f'MOCell Hypervolume: {hv_mocell}')
 
 
 
@@ -207,6 +213,7 @@ def main():
     nsgaii_front = []
     nsgaiii_front = []
     mspso_front = []
+    mocell_front = []
     # get the objective values of the ensemble of non-dominated solutions
     ns = [s.objectives for s in snd]
     for idx, f in enumerate(objs_values):
@@ -218,7 +225,9 @@ def main():
                     nsgaiii_front.append(o)
                 elif idx == 2:
                     mspso_front.append(o)
-    objs_values = [nsgaii_front, nsgaiii_front, mspso_front]
+                elif idx == 3:
+                    mocell_front.append(o)
+    objs_values = [nsgaii_front, nsgaiii_front, mspso_front, mocell_front]
     print(objs_values)
     plot_2fronts_hull(objs_values, algs, xlabel, ylabel, 'f1f2-ensemble-nd')
 
@@ -229,6 +238,7 @@ def main():
     files = find_files(f'NSGAII.*FUN*{src_str}')
     files.extend(find_files(f'NSGAIII.*FUN*{src_str}'))
     files.extend(find_files(f'MSPSO.*FUN*{src_str}'))
+    files.extend(find_files(f'MOCell.*FUN*{src_str}'))
     print(files)
     xlabel = 'f2'
     ylabel = 'f3'
@@ -247,6 +257,8 @@ def main():
             objsnsgaiii = [s.objectives for s in solution]
         elif 'MSPSO' in filename:
             objsmspso = [s.objectives for s in solution]
+        elif 'MOCell' in filename:
+            objsmocell = [s.objectives for s in solution]
         solutions.extend(solution)
         print(f'Number of solutions: {len(solution)}, {type(solution)}')
         # Getting the objective values
@@ -258,18 +270,20 @@ def main():
     # Put all objs into a numpy array
     #objs = np.array(objsnsgaii + objsnsgaiii + objsmspso)
     #
-    objs = np.array(objsnsgaii + objsnsgaiii + objsmspso)
+    objs = np.array(objsnsgaii + objsnsgaiii + objsmspso + objsmocell)
     reference_point = objs.max(axis=0) * 1.1
     reference_point = reference_point.tolist()
-    print(f'Len of objsnsgaii: {len(objsnsgaii)} objsnsgaiii: {len(objsnsgaiii)} mspso: {len(objsmspso)}')
+    print(f'Len of objsnsgaii: {len(objsnsgaii)} objsnsgaiii: {len(objsnsgaiii)} mspso: {len(objsmspso)} mocell: {len(objsmocell)}')
     hv = HyperVolume(reference_point)
     hv_nsgaii = hv.compute(np.array(objsnsgaii))
     hv_nsgaiii = hv.compute(np.array(objsnsgaiii))
     hv_mspso = hv.compute(np.array(objsmspso))
+    hv_mocell = hv.compute(np.array(objsmocell))
     print(f'Reference Point: {reference_point}')
     print(f'NSGAII Hypervolume: {hv_nsgaii}')
     print(f'NSGAIII Hypervolume: {hv_nsgaiii}')
     print(f'MSPSO Hypervolume: {hv_mspso}')
+    print(f'MOCell Hypervolume: {hv_mocell}')
 
     #plot_2fronts_hull(objs_values, algs, xlabel, ylabel)
     # Then merge the three fronts and get the non-dominated solutions
@@ -280,6 +294,7 @@ def main():
     nsgaii_front = []
     nsgaiii_front = []
     mspso_front = []
+    mocell_front = []
     # get the objective values of the ensemble of non-dominated solutions
     ns = [s.objectives for s in snd]
     for idx, f in enumerate(objs_values):
@@ -291,7 +306,9 @@ def main():
                     nsgaiii_front.append(o)
                 elif idx == 2:
                     mspso_front.append(o)
-    objs_values = [nsgaii_front, nsgaiii_front, mspso_front]
+                elif idx == 3:
+                    mocell_front.append(o)
+    objs_values = [nsgaii_front, nsgaiii_front, mspso_front, mocell_front]
     #print(objs_values)
     plot_2fronts_hull(objs_values, algs, xlabel, ylabel, 'f2f3-ensemble-nd')
 
