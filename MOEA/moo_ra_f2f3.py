@@ -8,11 +8,11 @@ from jmetal.core.problem import IntegerProblem, FloatProblem
 from jmetal.core.solution import IntegerSolution, FloatSolution
 
 
-class MooRaF1F2(IntegerProblem):
+class MooRaF2F3(IntegerProblem):
     """Multi-Cluster problem"""
 
     def __init__(self):
-        super(MooRaF1F2, self).__init__()
+        super(MooRaF2F3, self).__init__()
         self.load_requests_data("./cnsm_data/Services.csv")
         self.load_instances_data(
             "./cnsm_data/pricing.csv", "./cnsm_data/AWS_EC2_Latency.csv"
@@ -317,15 +317,15 @@ class MooRaF1F2(IntegerProblem):
         return qos
 
     def evaluate(self, solution: IntegerSolution) -> IntegerSolution:
-        max_latency = self.calculate_max_latency(solution)
         tc, cpu_violations, ram_violations, gpu_violations, _ = self.calculate_costs(
             solution
         )
         # qos = self.calculate_qos(solution)
         latency_violations = self.latency_violations(solution)
+        qos = self.calculate_qos(solution)
 
-        solution.objectives[0] = max_latency
-        solution.objectives[1] = tc
+        solution.objectives[0] = tc
+        solution.objectives[1] = qos
 
         # Imposta i vincoli come violazioni (più violazioni => peggio è)
         solution.constraints[0] = self.check_number_of_replicas(solution)
@@ -356,4 +356,4 @@ class MooRaF1F2(IntegerProblem):
         return 5
 
     def name(self):
-        return "Moo_Ra_F1F2"
+        return "Moo_Ra_F2F3"

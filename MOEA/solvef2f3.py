@@ -1,7 +1,9 @@
 from scheduling_ra_f2f3 import SchedulingRAF2F3
+from moo_ra_f2f3 import MooRaF2F3
 
 from mspso import MSPSO
 
+from jmetal.algorithm.multiobjective.mocell import MOCell
 from jmetal.algorithm.multiobjective.nsgaiii import NSGAII, NSGAIII
 from jmetal.algorithm.multiobjective.nsgaiii import UniformReferenceDirectionFactory
 from jmetal.operator import IntegerPolynomialMutation, IntegerSBXCrossover
@@ -9,6 +11,8 @@ from jmetal.util.comparator import DominanceWithConstraintsComparator
 from jmetal.util.evaluator import DaskEvaluator, MultiprocessEvaluator
 from jmetal.util.termination_criterion import StoppingByEvaluations
 
+from jmetal.util.archive import CrowdingDistanceArchive
+from jmetal.util.neighborhood import C9
 from jmetal.lab.visualization import Plot
 from jmetal.util.solution import get_non_dominated_solutions
 from jmetal.util.solution import (
@@ -84,10 +88,36 @@ if __name__ == '__main__':
     freeze_support()
 
 
-    problem = SchedulingRAF2F3()
+    #problem = SchedulingRAF2F3()
+    problem = MooRaF2F3()
     problem_name = problem.name()
 
+
     reference_directions_factory = UniformReferenceDirectionFactory(n_dim=2, n_points=30)
+    
+    algorithm = MOCell(
+        problem=problem,
+        population_size=100,
+        neighborhood=C9(10, 10),
+        archive=CrowdingDistanceArchive(100),
+        mutation=IntegerPolynomialMutation(probability=0.6, distribution_index=30),
+        crossover=IntegerSBXCrossover(probability=1.0, distribution_index=20),
+        termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+        population_evaluator=MultiprocessEvaluator(processes=8),
+    )
+
+    algorithm.run()
+    front = get_non_dominated_solutions(algorithm.result())    
+    # compute expects a numpy array
+    objsmocell = [s.objectives for s in front]
+
+    for idx,s in enumerate(front):
+        s.number_of_objectives = 2
+        _, _, _, _, data = problem.calculate_costs(s)
+        #plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f1_f2_{idx}.png")
+    
+    logplot_front(front, algorithm)
+    
     algorithm = NSGAII(
         problem=problem,
         population_evaluator=MultiprocessEvaluator(processes=8),
@@ -106,8 +136,8 @@ if __name__ == '__main__':
 
     for idx,s in enumerate(front):
         s.number_of_objectives = 2
-        _, _, _, data = problem.calculate_costs(s)
-        plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f2_f3_{idx}.png")
+        _, _, _, _ , data = problem.calculate_costs(s)
+        #plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f2_f3_{idx}.png")
     
     logplot_front(front, algorithm)
 
@@ -132,8 +162,8 @@ if __name__ == '__main__':
 
     for idx, s in enumerate(front):
         s.number_of_objectives = 2
-        _, _, _, data = problem.calculate_costs(s)
-        plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f2_f3_{idx}.png")
+        _, _, _, _, data = problem.calculate_costs(s)
+        #plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f2_f3_{idx}.png")
 
     logplot_front(front, algorithm)
 
@@ -153,21 +183,23 @@ if __name__ == '__main__':
 
     for idx, s in enumerate(front):
         s.number_of_objectives = 2
-        _, _, _, data = problem.calculate_costs(s)
-        plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f2_f3_{idx}.png")
+        _, _, _, _, data = problem.calculate_costs(s)
+        #plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f2_f3_{idx}.png")
     
     logplot_front(front, algorithm)
 
-    # Put all objs into a numpy array
-    objs = np.array(objsnsgaii + objsnsgaiii + objsmspso)
+     # Put all objs into a numpy array
+    objs = np.array(objsmocell + objsnsgaii + objsnsgaiii + objsmspso)
     reference_point = objs.max(axis=0) * 1.1
     reference_point = reference_point.tolist()
 
     hv = HyperVolume(reference_point)
+    hv_mocell = hv.compute(np.array(objsmocell))
     hv_nsgaii = hv.compute(np.array(objsnsgaii))
     hv_nsgaiii = hv.compute(np.array(objsnsgaiii))
     hv_mspso = hv.compute(np.array(objsmspso))
     print(f'Reference Point: {reference_point}')
+    print(f'MOCell Hypervolume: {hv_mocell}')
     print(f'NSGAII Hypervolume: {hv_nsgaii}')
     print(f'NSGAIII Hypervolume: {hv_nsgaiii}')
     print(f'MSPSO Hypervolume: {hv_mspso}')
