@@ -56,7 +56,7 @@ function load_data(latency_file::String, instance_file::String, service_file::St
     latency_df = CSV.read(latency_file, DataFrame)
     instance_df = CSV.read(instance_file, DataFrame)
     service_df = CSV.read(service_file, DataFrame)
-    
+
     DC = latency_df.DataCenter
     I = Set(instance_df.Instance)
     print(I)
@@ -64,19 +64,19 @@ function load_data(latency_file::String, instance_file::String, service_file::St
     D = 1:nrow(service_df)
     T = 1:100 # Assuming T is 100, adjust as needed
 
-    l = Dict((i, dc) => latency_df[findfirst(==(row.location), latency_df.DataCenter), dc] 
+    l = Dict((i, dc) => latency_df[findfirst(==(row.location), latency_df.DataCenter), dc]
              for (i, row) in enumerate(eachrow(service_df)), dc in DC)
-    
+
     CO = Dict((row.Instance, row.DataCenter) => row."On-Demand" for row in eachrow(instance_df))
     CR = Dict((row.Instance, row.DataCenter) => row.Reserved for row in eachrow(instance_df))
     CS = Dict((row.Instance, row.DataCenter) => row.Spot for row in eachrow(instance_df))
-    
+
     C = Dict((row.Instance, row.DataCenter) => row.vCPU for row in eachrow(instance_df))
     M = Dict((row.Instance, row.DataCenter) => row.RAM for row in eachrow(instance_df))
 	G = Dict((row.Instance, row.DataCenter) => row.GPU for row in eachrow(instance_df))
-    
+
     f = Dict((row.Instance, row.DataCenter) => row.InterruptFrequency / 100 for row in eachrow(instance_df))
-    
+
     c = Dict(i => row.cpu for (i, row) in enumerate(eachrow(service_df)))
     m = Dict(i => row.ram for (i, row) in enumerate(eachrow(service_df)))
 	g = Dict(i => row.gpu for (i, row) in enumerate(eachrow(service_df)))
@@ -84,7 +84,7 @@ function load_data(latency_file::String, instance_file::String, service_file::St
 
     R = Dict(i => row.replicas for (i, row) in enumerate(eachrow(service_df)))
     duration = Dict(i => row.duration for (i, row) in enumerate(eachrow(service_df)))
-    
+
     Ir = I
     Io = I
     Is = I
@@ -115,7 +115,7 @@ function create_model(DC, I, D, T, l, CO, CR, CS, C, M, G, f, c, m, g, lat_thres
 	set_optimizer_attribute(model, "MIPGap", gap)
 	set_optimizer_attribute(model, "SolFiles", "solution_")  # Saves solutions periodically
 	#set_optimizer_attribute(model, "Threads", 4)
-	
+
     @variable(model, r[j in I, k in DC], Int)
     @variable(model, o[t in T, j in I, k in DC], Int)
     @variable(model, s[t in T, j in I, k in DC], Int)
@@ -180,24 +180,17 @@ function create_model(DC, I, D, T, l, CO, CR, CS, C, M, G, f, c, m, g, lat_thres
 
     @expression(model, f1, 1/length(D) * sum(L[i] for i in D))
 
-    # Reserved instances be used for the entire duration T 
-    @expression(model, f2, sum(CR[j,k] * r[j,k] for j in Ir, k in DC) * last(T) +
-                           sum(CO[j,k] * o[t,j,k] for t in T, j in Io, k in DC) + 
-                           sum(CS[j,k] * s[t,j,k] for t in T, j in Is, k in DC))
-
-    @expression(model, f3, 1/length(D) * sum(z[t,i,j,k,r] * f[j,k] / R[i]
+	@expression(model, f3, 1/length(D) * sum(z[t,i,j,k,r] * f[j,k] / R[i]
                                              for i in D, j in Is, k in DC, r in 1:R[i], t in T))
-
-    #@objective(model, Min, f1) #[f1, f2, f3])
 
 	# solve all three objectives using DominguezRios
     # Currently variables r, o, s are not bounded, thus DominguezRios will not work
     # Gurobi alone works well with this model (even with larger instances)
     # However, it solves the problem with a linearization of the single objectives
 
-	@objective(model, Min, [f1, f2, f3])
+	@objective(model, Min, [f1, f3])
 
-    return model, f1, f2, f3
+    return model, f1, f3
 end
 
 # Define the list of MIP gaps to test
@@ -218,11 +211,11 @@ latency_file = "AWS/latency.csv"
 instance_file = "AWS/pricing.csv"
 
 # Change here according to the usecase you want to test
-usecase = "all" # "smartcity", "iiot", "ai", "vr"
+usecase = "vr" # "smartcity", "iiot", "ai", "vr"
 
 # Paths
 service_file = "services/types/" * usecase * ".csv"
-results_path = "results/usecase/" * usecase * "/f1_f2_f3/"
+results_path = "results/usecase/" * usecase * "/f1_f3/"
 
 # Store all results in a DataFrame
 results = DataFrame()
@@ -234,18 +227,16 @@ for gap in mip_gaps
     load_time = @elapsed DC, I, D, T, l, CO, CR, CS, C, M, G, f, c, m, g, lat_threshold, R, Ir, Io, Is, duration, N, Dt = load_data(latency_file, instance_file, service_file)
 
     # Create model with new gap
-    creation_time = @elapsed model, f1, f2, f3 = create_model(DC, I, D, T, l, CO, CR, CS, C, M, G, f, c, m, g, lat_threshold, R, Ir, Io, Is, Dt, N, duration, gap)
+    creation_time = @elapsed model, f1, f3 = create_model(DC, I, D, T, l, CO, CR, CS, C, M, G, f, c, m, g, lat_threshold, R, Ir, Io, Is, Dt, N, duration, gap)
 
     # Solve model
     execution_time = @elapsed optimize!(model)
 
     # Extract objective values
     latency = value(f1)
-    cost = value(f2)
     unavailability = value(f3)
 
     println("latency: ", latency, " ms")
-	println("cost: ", cost, "")
 	println("unavailability: ", unavailability, "")
 
 	println("Load Time: ", load_time, " seconds")
@@ -258,35 +249,31 @@ for gap in mip_gaps
 					Creation_time = creation_time,
 					Execution_Time = execution_time,
 					Latency = [value(f1; result = i) for i in 1:result_count(model)],
-					Cost = [value(f2; result = i) for i in 1:result_count(model)],
-					Unavailability = [value(f3; result = i) for i in 1:result_count(model)]))
+					Unavailability = [value(f3; result = i) for i in 1:result_count(model)]
+					))
 
 	# print summary model
 	println(solution_summary(model))
 
-	plot = Plots.scatter3d(
+	plot = Plots.scatter(
 	[value(f1; result = i) for i in 1:result_count(model)],
-    [value(f2; result = i) for i in 1:result_count(model)],
     [value(f3; result = i) for i in 1:result_count(model)];
     xlabel = "Latency",
-    ylabel = "Cost",
-	zlabel = "Unavailability",
+    ylabel = "Unavailability",
 	markersize = 5,      # Adjust marker size
     markerstrokewidth = 0.5,  # Edge around points
     markerstrokecolor = :black,  # Improve visibility
     color = :blues,      # Use a color gradient
-    camera = (30, 60)    # Adjust camera view angle
 	)
 
 	savefig(plot, results_path * "plot_gap_$(gap)_usecase_$(usecase).png")
 
 	# Extract objective values
 	latency = [value(f1; result = i) for i in 1:result_count(model)]
-	cost = [value(f2; result = i) for i in 1:result_count(model)]
 	unavailability = [value(f3; result = i) for i in 1:result_count(model)]
 
 	# Combine objectives into tuples
-	objectives = [(latency[i], cost[i], unavailability[i]) for i in eachindex(latency)]
+	objectives = [(latency[i], unavailability[i]) for i in eachindex(latency)]
 	println("Objective values: ", objectives, "")
 
 	# Compute Pareto front
@@ -294,33 +281,29 @@ for gap in mip_gaps
 
 	# Extract Pareto-optimal points
 	pareto_latency = [sol[1] for sol in pareto_solutions]
-	pareto_cost = [sol[2] for sol in pareto_solutions]
-	pareto_unavailability = [sol[3] for sol in pareto_solutions]
+	pareto_unavailability = [sol[2] for sol in pareto_solutions]
 
 	println("pareto_latency values: ", pareto_latency, "")
-	println("pareto_cost values: ", pareto_cost, "")
 	println("pareto_unavailability values: ", pareto_unavailability, "")
 
 	# print summary model
 	println(solution_summary(model))
 
 	# Plot all solutions
-	plot = Plots.scatter3d(
-		latency, cost, unavailability;
+	plot = Plots.scatter(
+		latency, unavailability;
 		xlabel = "Latency",
-		ylabel = "Cost",
-		zlabel = "Unavailability",
+		ylabel = "Unavailability",
 		markersize = 5,
 		markerstrokewidth = 0.5,
 		markerstrokecolor = :black,
 		color = :blues,
-		camera = (30, 60),
 		label = "All Solutions"
 	)
 
 	# Overlay Pareto front with red markers
-	Plots.scatter3d!(
-		pareto_latency, pareto_cost, pareto_unavailability;
+	Plots.scatter!(
+		pareto_latency, pareto_unavailability;
 		color = :red,
 		markersize = 7,
 		label = "Pareto Front"
@@ -337,3 +320,4 @@ end
 # Save all results to a CSV
 CSV.write(results_path * "results_usecase_$(usecase).csv", results)
 println("✅ All results saved to results_usecase_$(usecase).csv")
+
