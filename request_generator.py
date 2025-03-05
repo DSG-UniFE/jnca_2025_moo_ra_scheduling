@@ -41,6 +41,7 @@ for idx, usecase in enumerate(usecases):
         for i in range(num_requests):
             request_time = np.sum(interarrival_times[:i+1])
             num_replicas = random.randint(1, MAX_REPLICAS)  # Number of pods
+            usecase = usecases[idx]
             name = random.choice(requests_names[idx])
             vCPU = random.randint(vCPU_ranges[idx][0], vCPU_ranges[idx][1])
             vRAM = random.randint(vRAM_ranges[idx][0], vRAM_ranges[idx][1])
@@ -49,6 +50,7 @@ for idx, usecase in enumerate(usecases):
             location = random.choice(dcs)
             latency = random.randint(latency_ranges[idx][0], latency_ranges[idx][1])
             request = {
+                "usecase": usecase,
                 "name": name,
                 "cpu": vCPU,
                 "gpu": gpu,
