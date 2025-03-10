@@ -6,12 +6,22 @@ import glob
 import os
 
 from jmetal.algorithm.multiobjective.mocell import MOCell
+from jmetal.algorithm.multiobjective.gde3 import GDE3
+from jmetal.algorithm.multiobjective.ibea import IBEA
+from jmetal.algorithm.multiobjective.moead import MOEAD
 from jmetal.algorithm.multiobjective.nsgaiii import NSGAII, NSGAIII
+from jmetal.algorithm.multiobjective.random_search import RandomSearch
+from jmetal.algorithm.multiobjective.spea2 import SPEA2
+from jmetal.algorithm.multiobjective.omopso import OMOPSO
+from jmetal.algorithm.multiobjective.smpso import SMPSO
 from jmetal.algorithm.multiobjective.nsgaiii import UniformReferenceDirectionFactory
-from jmetal.operator import IntegerPolynomialMutation, IntegerSBXCrossover
+from jmetal.operator import IntegerPolynomialMutation, IntegerSBXCrossover, DifferentialEvolutionCrossover
 from jmetal.util.comparator import DominanceWithConstraintsComparator
 from jmetal.util.evaluator import DaskEvaluator, MultiprocessEvaluator
 from jmetal.util.termination_criterion import StoppingByEvaluations
+from jmetal.util.aggregation_function import PenaltyBoundaryIntersection
+from jmetal.operator.mutation import UniformMutation, NonUniformMutation
+from jmetal.operator.mutation import PolynomialMutation
 
 from jmetal.operator.crossover import IntegerSBXCrossover
 from jmetal.util.archive import CrowdingDistanceArchive
@@ -137,6 +147,142 @@ if __name__ == '__main__':
 
         problem = MooRa3(service_file)
         problem_name = problem.name()
+        
+        algorithm = GDE3(
+            problem=problem,
+            population_size=100,
+            cr=0.5,
+            f=0.5,
+            termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+            population_evaluator=MultiprocessEvaluator(processes=8),
+        )
+
+        algorithm.run()
+
+        front = get_non_dominated_solutions(algorithm.result())
+        # compute expects a numpy array
+        objs = [s.objectives for s in front]
+        hv = HyperVolume(reference_point)
+        hv_value = hv.compute(np.array(objs))
+        print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
+
+        for idx,s in enumerate(front):
+            print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
+            s.number_of_objectives = 3
+            _, _, _, _, data = problem.calculate_costs(s)
+            #plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
+
+        logplot_front(front, algorithm, result_dir, problem_name)
+        
+
+        algorithm = IBEA(
+            problem=problem,
+            kappa=1.0,
+            population_size=100,
+            offspring_population_size=100,
+            mutation=IntegerPolynomialMutation(probability=1.0 / problem.number_of_variables(), distribution_index=20),
+            crossover=IntegerSBXCrossover(probability=1.0, distribution_index=20),
+            termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+        )
+
+        algorithm.run()
+
+        front = get_non_dominated_solutions(algorithm.result())
+        # compute expects a numpy array
+        objs = [s.objectives for s in front]
+        hv = HyperVolume(reference_point)
+        hv_value = hv.compute(np.array(objs))
+        print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
+
+        for idx,s in enumerate(front):
+            print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
+            s.number_of_objectives = 3
+            _, _, _, _, data = problem.calculate_costs(s)
+            #plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
+
+        logplot_front(front, algorithm, result_dir, problem_name)
+      
+
+        algorithm = MOEAD(
+            problem=problem,
+            population_size=100,
+            crossover=DifferentialEvolutionCrossover(CR=1.0, F=0.5),
+            mutation=IntegerPolynomialMutation(probability=1.0 / problem.number_of_variables(), distribution_index=20),
+            aggregation_function=PenaltyBoundaryIntersection(dimension=problem.number_of_objectives()),
+            neighbor_size=20,
+            neighbourhood_selection_probability=0.9,
+            max_number_of_replaced_solutions=2,
+            weight_files_path='resources/MOEAD_weights',
+            termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+        )
+
+        algorithm.run()
+
+        front = get_non_dominated_solutions(algorithm.result())
+        # compute expects a numpy array
+        objs = [s.objectives for s in front]
+        hv = HyperVolume(reference_point)
+        hv_value = hv.compute(np.array(objs))
+        print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
+
+        for idx,s in enumerate(front):
+            print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
+            s.number_of_objectives = 3
+            _, _, _, _, data = problem.calculate_costs(s)
+            #plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
+
+        logplot_front(front, algorithm, result_dir, problem_name)
+      
+
+        algorithm = SPEA2(
+            problem=problem,
+            population_size=50,
+            offspring_population_size=50,
+            mutation=IntegerPolynomialMutation(probability=1.0 / problem.number_of_variables(), distribution_index=20),
+            crossover=IntegerSBXCrossover(probability=1.0, distribution_index=20),
+            termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+        )
+
+        algorithm.run()
+
+        front = get_non_dominated_solutions(algorithm.result())
+        # compute expects a numpy array
+        objs = [s.objectives for s in front]
+        hv = HyperVolume(reference_point)
+        hv_value = hv.compute(np.array(objs))
+        print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
+
+        for idx,s in enumerate(front):
+            print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
+            s.number_of_objectives = 3
+            _, _, _, _, data = problem.calculate_costs(s)
+            #plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
+
+        logplot_front(front, algorithm, result_dir, problem_name)
+        
+
+        algorithm = RandomSearch(
+            problem=problem,
+            termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+        )
+
+        algorithm.run()
+
+        front = get_non_dominated_solutions(algorithm.result())
+        # compute expects a numpy array
+        objs = [s.objectives for s in front]
+        hv = HyperVolume(reference_point)
+        hv_value = hv.compute(np.array(objs))
+        print(f'{algorithm.get_name()}: Hypervolume: {hv_value}')
+
+        for idx,s in enumerate(front):
+            print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
+            s.number_of_objectives = 3
+            _, _, _, _, data = problem.calculate_costs(s)
+            #plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
+
+        logplot_front(front, algorithm, result_dir, problem_name)
+  
 
         algorithm = MOCell(
             problem=problem,
@@ -162,7 +308,7 @@ if __name__ == '__main__':
             print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
             s.number_of_objectives = 3
             _, _, _, _, data = problem.calculate_costs(s)
-            plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
+            #plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
 
         logplot_front(front, algorithm, result_dir, problem_name)
 
@@ -192,7 +338,7 @@ if __name__ == '__main__':
             print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
             s.number_of_objectives = 3
             _, _, _, _, data = problem.calculate_costs(s)
-            plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
+            #plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
 
         logplot_front(front, algorithm, result_dir, problem_name)
 
@@ -227,7 +373,7 @@ if __name__ == '__main__':
             print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
             s.number_of_objectives = 3
             _, _, _, _, data = problem.calculate_costs(s)
-            plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
+            #plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
 
         logplot_front(front, algorithm, result_dir, problem_name)
 
@@ -252,7 +398,7 @@ if __name__ == '__main__':
             print(f'F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}')
             s.number_of_objectives = 3
             _, _, _, _, data = problem.calculate_costs(s)
-            plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
+            #plot_instance_usage(data, os.path.join(result_dir, f"{algorithm.get_name()}_{idx}.png"))
 
         logplot_front(front, algorithm, result_dir, problem_name)
 
@@ -269,3 +415,4 @@ if __name__ == '__main__':
         print(f'NSGAII Hypervolume: {hv_nsgaii}')
         print(f'NSGAIII Hypervolume: {hv_nsgaiii}')
         print(f'MSPSO Hypervolume: {hv_mspso}')
+  

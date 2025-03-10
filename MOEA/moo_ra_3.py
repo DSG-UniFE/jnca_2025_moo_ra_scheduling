@@ -150,8 +150,8 @@ class MooRa3(IntegerProblem):
 
         for idx, value in enumerate(svariables):
             dc_idx, instance_idx, price_idx = self.decode(value)
-            dc = self.datacenters[dc_idx]
-            instance = self.instances[instance_idx]
+            dc = self.datacenters[int(dc_idx)]
+            instance = self.instances[int(instance_idx)]
             request_idx = self.mapping[idx]
             cpu_required = self.requests_cpu[request_idx]
             ram_required = self.requests_ram[request_idx]
@@ -238,7 +238,7 @@ class MooRa3(IntegerProblem):
         for idx, value in enumerate(svariables):
             request_idx = self.mapping[idx]
             dc_idx, _, _ = self.decode(value)
-            dc = self.datacenters[dc_idx]
+            dc = self.datacenters[int(dc_idx)]
             request_location = self.requests_location[request_idx]
             
             latency = self.latency_lookup[(request_location, dc)]
@@ -257,8 +257,8 @@ class MooRa3(IntegerProblem):
         for idx, value in enumerate(svariables):
             request_idx = self.mapping[idx]
             dc_idx, _, _ = self.decode(value)
-            dc = self.datacenters[dc_idx]
-            request_location = self.requests_location[request_idx]
+            dc = self.datacenters[int(dc_idx)]
+            request_location = self.requests_location[int(request_idx)]
             
             latency = self.latency_lookup[(request_location, dc)]
             if latency > self.requests_latency[request_idx]:
@@ -272,8 +272,8 @@ class MooRa3(IntegerProblem):
         svariables = solution.variables[self.num_requests:]
         for idx, value in enumerate(svariables):
             dc_idx, instance_idx, price_idx = self.decode(value)
-            dc = self.datacenters[dc_idx]
-            instance = self.instances[instance_idx]
+            dc = self.datacenters[int(dc_idx)]
+            instance = self.instances[int(instance_idx)]
             request_idx = self.mapping[idx]
 
             if price_idx == 2:  # Spot
