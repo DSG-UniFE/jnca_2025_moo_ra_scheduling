@@ -20,13 +20,13 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from collections import defaultdict
 import pandas as pd
-
 # For HV calculation
 from jmetal.core.quality_indicator import HyperVolume
 import numpy as np
 
 import argparse
 from scipy.spatial import ConvexHull
+from scipy.spatial.distance import cdist
 from matplotlib import pyplot as plt
 import glob
 import os
@@ -43,6 +43,7 @@ def retrieve_objectives(filename, output_dir=None):
         os.makedirs(output_dir, exist_ok=True)
 
     with open(filename, newline='') as csvfile:
+        print(f"Reading file {filename}")
         reader = csv.DictReader(csvfile)
         for row in reader:
             # Retrieve the gap
@@ -113,14 +114,14 @@ def find_files(pattern):
     files = glob.glob(f'*FUN*{pattern}')
     return files    
 
-'''
-Sparsity calculation according to the paper
- Xu et al., Prediction-guided multi-objective reinforcement 
- learning for continuous robot control.
- Front is the list of solutions and num_objective is the number of objectives
- Sort the lists based on the objectives and calculate the sparsity
-'''
 def sparsity_calculation(front, num_objective):
+    """
+    Sparsity calculation according to the paper
+    Xu et al., Prediction-guided multi-objective reinforcement 
+    learning for continuous robot control.
+    Front is the list of solutions and num_objective is the number of objectives
+    Sort the lists based on the objectives and calculate the sparsity
+    """
     # retrieve the solutions
     objs = [s.objectives for s in front]
     # calculate the sparsity
@@ -131,6 +132,52 @@ def sparsity_calculation(front, num_objective):
             sparsity += (objs[i][j] - objs[i + 1][j]) ** 2
     return sparsity / (len(objs) - 1)
 
+
+def dominance_based_gap(meta_heuristic_solutions, ilp_solutions):
+    """
+    Calculate the dominance-based approximation gap for each metaheuristic solution.
+    
+    Parameters:
+        meta_heuristic_solutions (numpy array): Array of shape (f, m) where f is the number of metaheuristic solutions and m is the number of objectives.
+        ilp_solutions (numpy array): Array of shape (n, m) representing ILP solutions.
+        f can be greater than n.
+    
+    Returns:
+        gaps (numpy array): Dominance-based approximation gaps.
+    """
+    # Initialize an array to store the minimum gap for each metaheuristic solution
+    gaps = []
+
+    # Iterate over each metaheuristic solution
+    for meta_solution in meta_heuristic_solutions:
+        # Calculate the distance from the metaheuristic solution to each ILP solution
+        # Here, we use a simple distance metric (e.g., Euclidean distance) to find the closest ILP solution
+        distances = cdist([meta_solution], ilp_solutions, metric='euclidean')
+        min_distance_idx = np.argmin(distances)
+
+        # Calculate the gap to the closest ILP solution
+        closest_ilp_solution = ilp_solutions[min_distance_idx]
+        gap = np.abs(meta_solution - closest_ilp_solution) / np.abs(closest_ilp_solution) * 100
+        gaps.append(gap)
+
+    min_gap = np.min(gaps, axis=0)
+
+    return min_gap
+
+
+
+def select_best_reference(ilp_solutions):
+    """
+    Select the best reference in the ILP solutions based on the ideal point.
+    """
+    # Assuming minimization problems
+    ideal = np.min(ilp_solutions, axis=0)
+    distances = np.linalg.norm(ilp_solutions - ideal, axis=1)
+    best_index = np.argmin(distances)
+    return ilp_solutions[best_index]
+
+
+
 def main():
     # Glob for each direcory within results
     dir_usecases_meta = glob.glob('results/*/')
@@ -140,7 +187,7 @@ def main():
     for usecase in dir_usecases_ilp:
         output_dir = os.path.join(usecase, 'objectives')
         os.makedirs(output_dir, exist_ok=True)
-        objectives_files_ilp = glob.glob(f'{usecase}/results*.csv')
+        objectives_files_ilp = glob.glob(f'{usecase}f1_f2_f3/results*.csv')
         for objective_file in objectives_files_ilp:
             retrieve_objectives(objective_file, output_dir)
 
@@ -159,14 +206,22 @@ def main():
         os.makedirs(output_dir_hv, exist_ok=True)
         output_dir_igds = os.path.dirname('../igds/')
         os.makedirs(output_dir_igds, exist_ok=True)
+        # Create directory for dominance approximation gaps
+        output_dir_dominance_gaps = os.path.dirname('../dominance_gaps/')
+        os.makedirs(output_dir_dominance_gaps, exist_ok=True)
         output_file_sparsity = os.path.join(output_dir_sparsities, f"sparsity_{usecase_name}.txt")
         output_file_hv = os.path.join(output_dir_hv, f"hypervolume_{usecase_name}.txt")
         output_file_igd = os.path.join(output_dir_igds, f"igd_{usecase_name}.txt")
+        
+        output_file_dominance_gap = os.path.join(output_dir_dominance_gaps, f"dominance_gaps_{usecase_name}.txt")
+
         f_sparsity = open(output_file_sparsity, "w")
         usecase = usecase.split('/')[1]
         print(f'Usecase: {usecase}')
         objectives_files_meta = glob.glob(f'results/{usecase}/*.FUN.*')
         objectives_files_ilp = glob.glob(f'../results/usecase/{usecase}/objectives/*.txt')
+        #print(objectives_files_meta)
+        #print(objectives_files_ilp)
     
         objsilpgap00 = []
         objsilpgap005 = []
@@ -216,6 +271,7 @@ def main():
         for filename in objectives_files_ilp:
             gap = filename.split('_')[-1].split('.t')[0]
             solutions = read_solutions(filename)
+            print(f'Filename: {filename} Gap: {gap}: Solutions: {len(solutions)}')
             sparsity = sparsity_calculation(solutions, 3)
             f_sparsity.write(f"ILP Gap {gap} Sparsity: {sparsity}\n")
 
@@ -249,10 +305,15 @@ def main():
         igd_nsgaii = igd.compute(np.array(objsnsgaii))
         igd_nsgaiii = igd.compute(np.array(objsnsgaiii))
         igd_mspso = igd.compute(np.array(objsmspso))
-        igd_moilp_gap00 = igd.compute(np.array(objsilpgap00))
-        igd_moilp_gap005 = igd.compute(np.array(objsilpgap005))
-        igd_moilp_gap01 = igd.compute(np.array(objsilpgap01))
-        igd_moilp_gap025 = igd.compute(np.array(objsilpgap025))
+        ilp_results_present = True
+        try:
+            igd_moilp_gap00 = igd.compute(np.array(objsilpgap00))
+            igd_moilp_gap005 = igd.compute(np.array(objsilpgap005))
+            igd_moilp_gap01 = igd.compute(np.array(objsilpgap01))
+            igd_moilp_gap025 = igd.compute(np.array(objsilpgap025))
+        except Exception as e:
+            print(f"WARNING -- Files are not there!")
+            ilp_results_present = False
         
         with open(output_file_hv, "w") as f:
             #f.write(f"Reference Point: {reference_point}\n")
@@ -260,23 +321,31 @@ def main():
             f.write(f"NSGAII Hypervolume: {hv_nsgaii}\n")
             f.write(f"NSGAIII Hypervolume: {hv_nsgaiii}\n")
             f.write(f"MSPSO Hypervolume: {hv_mspso}\n")
-            f.write(f"\n\n********** ILP **********\n\n")
-            f.write(f"ILP Gap 0.00 Hypervolume: {hv_moilp_gap00}\n")
-            f.write(f"ILP Gap 0.05 Hypervolume: {hv_moilp_gap005}\n")
-            f.write(f"ILP Gap 0.1 Hypervolume: {hv_moilp_gap01}\n")
-            f.write(f"ILP Gap 0.25 Hypervolume: {hv_moilp_gap025}\n")
+            if ilp_results_present:
+                f.write(f"\n\n********** ILP **********\n\n")
+                f.write(f"ILP Gap 0.00 Hypervolume: {hv_moilp_gap00}\n")
+                f.write(f"ILP Gap 0.05 Hypervolume: {hv_moilp_gap005}\n")
+                f.write(f"ILP Gap 0.1 Hypervolume: {hv_moilp_gap01}\n")
+                f.write(f"ILP Gap 0.25 Hypervolume: {hv_moilp_gap025}\n")
 
         with open(output_file_igd, "w") as f:
             f.write(f"MOCell IGD: {igd_mocell}\n")
             f.write(f"NSGAII IGD: {igd_nsgaii}\n")
             f.write(f"NSGAIII IGD: {igd_nsgaiii}\n")
             f.write(f"MSPSO IGD: {igd_mspso}\n")
-            f.write(f"\n\n********** ILP **********\n\n")
-            f.write(f"ILP Gap 0.0 IGD: {igd_moilp_gap00}\n")
-            f.write(f"ILP Gap 0.05 IGD: {igd_moilp_gap005}\n")
-            f.write(f"ILP Gap 0.1 IGD: {igd_moilp_gap01}\n")
-            f.write(f"ILP Gap 0.25 IGD: {igd_moilp_gap025}\n")
+            if ilp_results_present:
+                f.write(f"\n\n********** ILP **********\n\n")
+                f.write(f"ILP Gap 0.0 IGD: {igd_moilp_gap00}\n")
+                f.write(f"ILP Gap 0.05 IGD: {igd_moilp_gap005}\n")
+                f.write(f"ILP Gap 0.1 IGD: {igd_moilp_gap01}\n")
+                f.write(f"ILP Gap 0.25 IGD: {igd_moilp_gap025}\n")
 
+        with open(output_file_dominance_gap, "w") as f:
+            if ilp_results_present:
+                f.write(f"MOCell Dominance Gap: {dominance_based_gap(np.array(objsmocell), objsilpgap00)}\n")
+                f.write(f"NSGAII Dominance Gap: {dominance_based_gap(np.array(objsnsgaii), objsilpgap00)}\n")
+                f.write(f"NSGAIII Dominance Gap: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap00)}\n")
+                f.write(f"MSPSO Dominance Gap: {dominance_based_gap(np.array(objsmspso), objsilpgap00)}\n")
 
 if __name__ == '__main__':
     main()
