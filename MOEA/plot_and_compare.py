@@ -231,6 +231,9 @@ def main():
         objsnsgaii = []
         objsnsgaiii = []
         objsmspso = []
+        objsibea = []
+        objsmoead = []
+        objsspea2 = []
 
         for filename in objectives_files_meta:
             #if '.png' in filename:
@@ -260,6 +263,18 @@ def main():
                 objsmspso = objective_values
                 algname = 'MSPSO'
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+            elif 'IBEA' in filename:
+                objsibea = objective_values
+                algname = 'IBEA'
+                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+            elif 'MOEAD' in filename:
+                objsmoead = objective_values
+                algname = 'MOEAD'
+                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+            elif 'SPEA2' in filename:
+                objsspea2 = objective_values
+                algname = 'SPEA2'
+                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
 
             #algname = filename.split('.')[0]
             #xlabel = src_str[0:2].lower()
@@ -285,7 +300,9 @@ def main():
                 objsilpgap025 = [s.objectives for s in solutions]
 
         # Put all objs into a numpy array
-        objs = np.array(objsilpgap00 + objsilpgap005 + objsilpgap01 + objsilpgap025 + objsmocell + objsnsgaii + objsnsgaiii + objsmspso)
+        objs = np.array(objsilpgap00 + objsilpgap005 + objsilpgap01 + objsilpgap025 +
+                         objsmocell + objsnsgaii + objsnsgaiii + objsmspso 
+                         + objsibea + objsmoead + objsspea2)
         
         reference_point = objs.max(axis=0) * 1.1
         reference_point = reference_point.tolist()
@@ -295,6 +312,9 @@ def main():
         hv_nsgaii = hv.compute(np.array(objsnsgaii))
         hv_nsgaiii = hv.compute(np.array(objsnsgaiii))
         hv_mspso = hv.compute(np.array(objsmspso))
+        hv_moead = hv.compute(np.array(objsmoead))
+        hv_spea2 = hv.compute(np.array(objsspea2))
+        hv_ibea = hv.compute(np.array(objsibea))
         hv_moilp_gap00 = hv.compute(np.array(objsilpgap00))
         hv_moilp_gap005 = hv.compute(np.array(objsilpgap005))
         hv_moilp_gap01 = hv.compute(np.array(objsilpgap01))
@@ -305,6 +325,9 @@ def main():
         igd_nsgaii = igd.compute(np.array(objsnsgaii))
         igd_nsgaiii = igd.compute(np.array(objsnsgaiii))
         igd_mspso = igd.compute(np.array(objsmspso))
+        igd_moead = igd.compute(np.array(objsmoead))
+        igd_spea2 = igd.compute(np.array(objsspea2))
+        igd_ibea = igd.compute(np.array(objsibea))
         ilp_results_present = True
         try:
             igd_moilp_gap00 = igd.compute(np.array(objsilpgap00))
@@ -321,6 +344,9 @@ def main():
             f.write(f"NSGAII Hypervolume: {hv_nsgaii}\n")
             f.write(f"NSGAIII Hypervolume: {hv_nsgaiii}\n")
             f.write(f"MSPSO Hypervolume: {hv_mspso}\n")
+            f.write(f"MOEAD Hypervolume: {hv_moead}\n")
+            f.write(f"SPEA2 Hypervolume: {hv_spea2}\n")
+            f.write(f"IBEA Hypervolume: {hv_ibea}\n")
             if ilp_results_present:
                 f.write(f"\n\n********** ILP **********\n\n")
                 f.write(f"ILP Gap 0.00 Hypervolume: {hv_moilp_gap00}\n")
@@ -333,6 +359,9 @@ def main():
             f.write(f"NSGAII IGD: {igd_nsgaii}\n")
             f.write(f"NSGAIII IGD: {igd_nsgaiii}\n")
             f.write(f"MSPSO IGD: {igd_mspso}\n")
+            f.write(f"MOEAD IGD: {igd_moead}\n")
+            f.write(f"SPEA2 IGD: {igd_spea2}\n")
+            f.write(f"IBEA IGD: {igd_ibea}\n")
             if ilp_results_present:
                 f.write(f"\n\n********** ILP **********\n\n")
                 f.write(f"ILP Gap 0.0 IGD: {igd_moilp_gap00}\n")
@@ -346,6 +375,9 @@ def main():
                 f.write(f"NSGAII Dominance Gap: {dominance_based_gap(np.array(objsnsgaii), objsilpgap00)}\n")
                 f.write(f"NSGAIII Dominance Gap: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap00)}\n")
                 f.write(f"MSPSO Dominance Gap: {dominance_based_gap(np.array(objsmspso), objsilpgap00)}\n")
+                f.write(f"MOEAD Dominance Gap: {dominance_based_gap(np.array(objsmoead), objsilpgap00)}\n")
+                f.write(f"SPEA2 Dominance Gap: {dominance_based_gap(np.array(objsspea2), objsilpgap00)}\n")
+                f.write(f"IBEA Dominance Gap: {dominance_based_gap(np.array(objsibea), objsilpgap00)}\n")
 
 if __name__ == '__main__':
     main()
