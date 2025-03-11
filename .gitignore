@@ -26,9 +26,6 @@ share/python-wheels/
 *.egg
 MANIFEST
 *.png
-*VAR*
-*FUN*
-*.png
 *.pdf
 *.DS_Store
 *.zip 
