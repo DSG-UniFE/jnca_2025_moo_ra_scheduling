@@ -1,0 +1,7 @@
+MOCell Dominance Gap: [ 0.          7.51231765 43.88888889]
+NSGAII Dominance Gap: [1314.65517241   46.1617235    20.        ]
+NSGAIII Dominance Gap: [ 0.         42.94271085 25.        ]
+MSPSO Dominance Gap: [2.64421182e+03 1.66390881e+00 1.11111111e+01]
+MOEAD Dominance Gap: [  0. 100. 100.]
+SPEA2 Dominance Gap: [309.35960591  72.98811709  16.66666667]
+IBEA Dominance Gap: [ 0.         53.18326732  3.33333333]
