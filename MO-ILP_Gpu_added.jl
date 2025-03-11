@@ -201,7 +201,7 @@ function create_model(DC, I, D, T, l, CO, CR, CS, C, M, G, f, c, m, g, lat_thres
 end
 
 # Define the list of MIP gaps to test
-mip_gaps = [0.0, 0.05, 0.10, 0.25, 0.5, 0.75] # 0%, 5%, 10%, 25%
+mip_gaps = [0.0, 0.05, 0.10, 0.25, 0.5, 0.75] # 0%, 5%, 10%, 25%, 50%, 75%
 
 # Initialize an empty DataFrame to store results
 results_df = DataFrame(
@@ -218,7 +218,7 @@ latency_file = "AWS/latency.csv"
 instance_file = "AWS/pricing.csv"
 
 # Change here according to the usecase you want to test
-usecase = "all" # "smartcity", "iiot", "ai", "vr"
+usecase = "smartcity50" # "smartcity", "iiot", "ai", "vr"
 
 # Paths
 service_file = "services/types/" * usecase * ".csv"
@@ -244,13 +244,13 @@ for gap in mip_gaps
     cost = value(f2)
     unavailability = value(f3)
 
-    println("latency: ", latency, " ms")
-	println("cost: ", cost, "")
-	println("unavailability: ", unavailability, "")
+    #println("latency: ", latency, " ms")
+	#println("cost: ", cost, "")
+	#println("unavailability: ", unavailability, "")
 
-	println("Load Time: ", load_time, " seconds")
-	println("Creation Time: ", creation_time, " seconds")
-	println("Execution Time: ", execution_time, " seconds")
+	#println("Load Time: ", load_time, " seconds")
+	#println("Creation Time: ", creation_time, " seconds")
+	#println("Execution Time: ", execution_time, " seconds")
 
     # Save results
     push!(results, (MIP_Gap = gap,
@@ -260,6 +260,17 @@ for gap in mip_gaps
 					Latency = [value(f1; result = i) for i in 1:result_count(model)],
 					Cost = [value(f2; result = i) for i in 1:result_count(model)],
 					Unavailability = [value(f3; result = i) for i in 1:result_count(model)]))
+
+	# print results
+	println("========== Results ==========")
+	println("Gap: ", gap)
+	println("Load Time: ", load_time, " seconds")
+	println("Creation Time: ", creation_time, " seconds")
+	println("Execution Time: ", execution_time, " seconds")
+	println("Latency: ", [value(f1; result = i) for i in 1:result_count(model)], "")
+	println("Cost: ", [value(f2; result = i) for i in 1:result_count(model)], "")
+	println("Unavailability: ", [value(f3; result = i) for i in 1:result_count(model)], "")
+	println("==============================")
 
 	# print summary model
 	println(solution_summary(model))
