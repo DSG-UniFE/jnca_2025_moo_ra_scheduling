@@ -31,8 +31,10 @@ class MooRa3(IntegerProblem):
         # and the second part indicate the information about replicas
         
         # Requests can be activated from 0 to 150
+        # ILP goes from 0 to 100, so let's try to run a fair comparison
+        T = 100
         self.lower_bound = [0 for _ in range(self.num_requests)] + [0 for _ in range(self.num_replicas)]
-        self.upper_bound = [150 for _ in range(self.num_requests)] + [self.num_combinations - 1 for _ in range(self.num_replicas)]
+        self.upper_bound = [T for _ in range(self.num_requests)] + [self.num_combinations - 1 for _ in range(self.num_replicas)]
         print(f'Number of variables: {len(self.lower_bound)}')
 
     def number_of_objectives(self) -> int:
