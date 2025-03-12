@@ -88,6 +88,8 @@ def plot_3d_front(front, alg_name, output_dir):
     # ax.set_title(f'{alg_name}')
     # increase scatter size
     ax.scatter(front[:, 0], front[:, 1], front[:, 2], alpha=0.8)
+    # Set the camera view angle to 30, 60
+    ax.view_init(30, 60)
     # Set label for x, y, z
     ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 12})
     ax.set_ylabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 12})
