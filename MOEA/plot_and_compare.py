@@ -256,6 +256,7 @@ def main():
         objsibea = []
         objsmoead = []
         objsspea2 = []
+        objsrandomsearch = []
 
         for filename in objectives_files_meta:
             # if '.png' in filename:
@@ -296,6 +297,10 @@ def main():
             elif "SPEA2" in filename:
                 objsspea2 = objective_values
                 algname = "SPEA2"
+                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+            elif "Random Search" in filename:
+                objsrandomsearch = objective_values
+                algname = "Random Search"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
 
             # algname = filename.split('.')[0]
@@ -349,6 +354,7 @@ def main():
         hv_moead = hv.compute(np.array(objsmoead))
         hv_spea2 = hv.compute(np.array(objsspea2))
         hv_ibea = hv.compute(np.array(objsibea))
+        hv_randomsearch = hv.compute(np.array(objsrandomsearch))
         hv_moilp_gap00 = hv.compute(np.array(objsilpgap00))
         hv_moilp_gap005 = hv.compute(np.array(objsilpgap005))
         hv_moilp_gap01 = hv.compute(np.array(objsilpgap01))
@@ -362,6 +368,7 @@ def main():
         igd_moead = igd.compute(np.array(objsmoead))
         igd_spea2 = igd.compute(np.array(objsspea2))
         igd_ibea = igd.compute(np.array(objsibea))
+        igs_randomsearch = igd.compute(np.array(objsrandomsearch))
         ilp_results_present = True
         try:
             igd_moilp_gap00 = igd.compute(np.array(objsilpgap00))
@@ -381,6 +388,7 @@ def main():
             f.write(f"MOEAD Hypervolume: {hv_moead}\n")
             f.write(f"SPEA2 Hypervolume: {hv_spea2}\n")
             f.write(f"IBEA Hypervolume: {hv_ibea}\n")
+            f.write(f"Random Search Hypervolume: {hv_randomsearch}\n")
             if ilp_results_present:
                 f.write(f"\n\n********** ILP **********\n\n")
                 f.write(f"ILP Gap 0.00 Hypervolume: {hv_moilp_gap00}\n")
@@ -396,6 +404,7 @@ def main():
             f.write(f"MOEAD IGD: {igd_moead}\n")
             f.write(f"SPEA2 IGD: {igd_spea2}\n")
             f.write(f"IBEA IGD: {igd_ibea}\n")
+            f.write(f"Random Search IGD: {igs_randomsearch}\n")
             if ilp_results_present:
                 f.write(f"\n\n********** ILP **********\n\n")
                 f.write(f"ILP Gap 0.0 IGD: {igd_moilp_gap00}\n")
@@ -426,8 +435,10 @@ def main():
                 f.write(
                     f"IBEA Dominance Gap: {dominance_based_gap(np.array(objsibea), objsilpgap00)}\n"
                 )
+                f.write(
+                    f"Random Search Dominance Gap: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap00)}\n"
+                )
 
 
 if __name__ == "__main__":
     main()
-
