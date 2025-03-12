@@ -259,6 +259,7 @@ def main():
         objsmoead = []
         objsspea2 = []
         objsrandomsearch = []
+        objsga = []
 
         for filename in objectives_files_meta:
             # if '.png' in filename:
@@ -303,6 +304,10 @@ def main():
             elif "Random Search" in filename:
                 objsrandomsearch = objective_values
                 algname = "Random Search"
+                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+            elif "Genetic" in filename:
+                objsga = objective_values
+                algname = "Genetic"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
 
             # algname = filename.split('.')[0]
@@ -485,6 +490,14 @@ def main():
                     f"Random Search Dominance Gap 0.25: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap025)}\n"
                     f"Random Search Dominance Gap 0.5: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap050)}\n"
                     f"Random Search Dominance Gap 0.75: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap075)}\n"
+                )
+                f.write(
+                    f"GA Dominance Gap: {dominance_based_gap(np.array(objsga), objsilpgap00)}\n"
+                    f"GA Dominance Gap 0.05: {dominance_based_gap(np.array(objsga), objsilpgap005)}\n"
+                    f"GA Dominance Gap 0.1: {dominance_based_gap(np.array(objsga), objsilpgap01)}\n"
+                    f"GA Dominance Gap 0.25: {dominance_based_gap(np.array(objsga), objsilpgap025)}\n"
+                    f"GA Dominance Gap 0.5: {dominance_based_gap(np.array(objsga), objsilpgap050)}\n"
+                    f"GA Dominance Gap 0.75: {dominance_based_gap(np.array(objsga), objsilpgap075)}\n"
                 )
 
 

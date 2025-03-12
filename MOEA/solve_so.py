@@ -39,7 +39,7 @@ if __name__ == "__main__":
     for service_file in services_files:
         # folder creation for results storage
         base_name = os.path.splitext(os.path.basename(service_file))[0]
-        result_dir = os.path.join("results_so", base_name)
+        result_dir = os.path.join("results", base_name)
         os.makedirs(result_dir, exist_ok=True)
 
         print("Processing file: ", service_file)
@@ -55,10 +55,10 @@ if __name__ == "__main__":
         algorithm = GeneticAlgorithm(
             problem=problem,
             population_size=100,
-            offspring_population_size=70,
+            offspring_population_size=100,
             mutation=IntegerPolynomialMutation(1.0 / problem.number_of_variables()),
             crossover=IntegerSBXCrossover(probability=0.6, distribution_index=15),
-            termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+            termination_criterion=StoppingByEvaluations(max_evaluations=100_000),
         )
 
         algorithm.observable.register(observer=PrintObjectivesObserver(5000))
@@ -67,6 +67,12 @@ if __name__ == "__main__":
         
         result = algorithm.result()
         print(f"Results: {result}")
+        # Check if solution is feasible
+        if sum(result.constraints) >= 0:
+            print(f"Constraints {result.constraints}")
+            print("Solution is not feasible")
+            continue
+
         latency = problem.calculate_max_latency(result)
         total_costs, _, _, _, _ = problem.calculate_costs(result)
         qos = problem.calculate_qos(result)
