@@ -249,6 +249,8 @@ def main():
         objsilpgap005 = []
         objsilpgap01 = []
         objsilpgap025 = []
+        objsilpgap050 = []
+        objsilpgap075 = []
         objsmocell = []
         objsnsgaii = []
         objsnsgaiii = []
@@ -325,6 +327,10 @@ def main():
                 objsilpgap01 = [s.objectives for s in solutions]
             elif gap == "0.25":
                 objsilpgap025 = [s.objectives for s in solutions]
+            elif gap == "0.5":
+                objsilpgap050 = [s.objectives for s in solutions]
+            elif gap == "0.75":
+                objsilpgap075 = [s.objectives for s in solutions]
 
         # Put all objs into a numpy array
         objs = np.array(
@@ -332,6 +338,8 @@ def main():
             + objsilpgap005
             + objsilpgap01
             + objsilpgap025
+            + objsilpgap050
+            + objsilpgap075
             + objsmocell
             + objsnsgaii
             + objsnsgaiii
@@ -415,28 +423,68 @@ def main():
         with open(output_file_dominance_gap, "w") as f:
             if ilp_results_present:
                 f.write(
-                    f"MOCell Dominance Gap: {dominance_based_gap(np.array(objsmocell), objsilpgap00)}\n"
+                    f"MOCell Dominance Gap 0.00: {dominance_based_gap(np.array(objsmocell), objsilpgap00)}\n"
+                    f"MOCell Dominance Gap 0.05: {dominance_based_gap(np.array(objsmocell), objsilpgap005)}\n"
+                    f"MOCell Dominance Gap 0.1: {dominance_based_gap(np.array(objsmocell), objsilpgap01)}\n"
+                    f"MOCell Dominance Gap 0.25: {dominance_based_gap(np.array(objsmocell), objsilpgap025)}\n"
+                    f"MOCell Dominance Gap 0.5: {dominance_based_gap(np.array(objsmocell), objsilpgap050)}\n"
+                    f"MOCell Dominance Gap 0.75: {dominance_based_gap(np.array(objsmocell), objsilpgap075)}\n"
                 )
                 f.write(
                     f"NSGAII Dominance Gap: {dominance_based_gap(np.array(objsnsgaii), objsilpgap00)}\n"
+                    f"NSGAII Dominance Gap 0.05: {dominance_based_gap(np.array(objsnsgaii), objsilpgap005)}\n"
+                    f"NSGAII Dominance Gap 0.1: {dominance_based_gap(np.array(objsnsgaii), objsilpgap01)}\n"
+                    f"NSGAII Dominance Gap 0.25: {dominance_based_gap(np.array(objsnsgaii), objsilpgap025)}\n"
+                    f"NSGAII Dominance Gap 0.5: {dominance_based_gap(np.array(objsnsgaii), objsilpgap050)}\n"
+                    f"NSGAII Dominance Gap 0.75: {dominance_based_gap(np.array(objsnsgaii), objsilpgap075)}\n"
                 )
                 f.write(
                     f"NSGAIII Dominance Gap: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap00)}\n"
+                    f"NSGAIII Dominance Gap 0.05: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap005)}\n"
+                    f"NSGAIII Dominance Gap 0.1: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap01)}\n"
+                    f"NSGAIII Dominance Gap 0.25: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap025)}\n"
+                    f"NSGAIII Dominance Gap 0.5: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap050)}\n"
+                    f"NSGAIII Dominance Gap 0.75: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap075)}\n"
                 )
                 f.write(
                     f"MSPSO Dominance Gap: {dominance_based_gap(np.array(objsmspso), objsilpgap00)}\n"
+                    f"MSPSO Dominance Gap 0.05: {dominance_based_gap(np.array(objsmspso), objsilpgap005)}\n"
+                    f"MSPSO Dominance Gap 0.1: {dominance_based_gap(np.array(objsmspso), objsilpgap01)}\n"
+                    f"MSPSO Dominance Gap 0.25: {dominance_based_gap(np.array(objsmspso), objsilpgap025)}\n"
+                    f"MSPSO Dominance Gap 0.5: {dominance_based_gap(np.array(objsmspso), objsilpgap050)}\n"
+                    f"MSPSO Dominance Gap 0.75: {dominance_based_gap(np.array(objsmspso), objsilpgap075)}\n"
                 )
                 f.write(
                     f"MOEAD Dominance Gap: {dominance_based_gap(np.array(objsmoead), objsilpgap00)}\n"
+                    f"MOEAD Dominance Gap 0.05: {dominance_based_gap(np.array(objsmoead), objsilpgap005)}\n"
+                    f"MOEAD Dominance Gap 0.1: {dominance_based_gap(np.array(objsmoead), objsilpgap01)}\n"
+                    f"MOEAD Dominance Gap 0.25: {dominance_based_gap(np.array(objsmoead), objsilpgap025)}\n"
+                    f"MOEAD Dominance Gap 0.5: {dominance_based_gap(np.array(objsmoead), objsilpgap050)}\n"
+                    f"MOEAD Dominance Gap 0.75: {dominance_based_gap(np.array(objsmoead), objsilpgap075)}\n"
                 )
                 f.write(
                     f"SPEA2 Dominance Gap: {dominance_based_gap(np.array(objsspea2), objsilpgap00)}\n"
+                    f"SPEA2 Dominance Gap 0.05: {dominance_based_gap(np.array(objsspea2), objsilpgap005)}\n"
+                    f"SPEA2 Dominance Gap 0.1: {dominance_based_gap(np.array(objsspea2), objsilpgap01)}\n"
+                    f"SPEA2 Dominance Gap 0.25: {dominance_based_gap(np.array(objsspea2), objsilpgap025)}\n"
+                    f"SPEA2 Dominance Gap 0.5: {dominance_based_gap(np.array(objsspea2), objsilpgap050)}\n"
+                    f"SPEA2 Dominance Gap 0.75: {dominance_based_gap(np.array(objsspea2), objsilpgap075)}\n"
                 )
                 f.write(
                     f"IBEA Dominance Gap: {dominance_based_gap(np.array(objsibea), objsilpgap00)}\n"
+                    f"IBEA Dominance Gap 0.05: {dominance_based_gap(np.array(objsibea), objsilpgap005)}\n"
+                    f"IBEA Dominance Gap 0.1: {dominance_based_gap(np.array(objsibea), objsilpgap01)}\n"
+                    f"IBEA Dominance Gap 0.25: {dominance_based_gap(np.array(objsibea), objsilpgap025)}\n"
+                    f"IBEA Dominance Gap 0.5: {dominance_based_gap(np.array(objsibea), objsilpgap050)}\n"
+                    f"IBEA Dominance Gap 0.75: {dominance_based_gap(np.array(objsibea), objsilpgap075)}\n"
                 )
                 f.write(
                     f"Random Search Dominance Gap: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap00)}\n"
+                    f"Random Search Dominance Gap 0.05: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap005)}\n"
+                    f"Random Search Dominance Gap 0.1: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap01)}\n"
+                    f"Random Search Dominance Gap 0.25: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap025)}\n"
+                    f"Random Search Dominance Gap 0.5: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap050)}\n"
+                    f"Random Search Dominance Gap 0.75: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap075)}\n"
                 )
 
 
