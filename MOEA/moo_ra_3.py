@@ -241,7 +241,7 @@ class MooRa3(IntegerProblem):
                 else:
                     # Allocate the given instance in a new bin 
                     if alg_allocation not in instance_usage:
-                        instance_usage[alg_allocation] = {'cpu': 0, 'ram': 0, 'gpu': 0, 'count': 1, 
+                        instance_usage[alg_allocation] = {'cpu': cpu_required, 'ram': ram_required, 'gpu': gpu_required, 'count': 1, 
                                                         'active': [[starting_time, ending_time]], 'costs': []}
                     else:
                         # get the current usage of the active bin and try fitting into it
