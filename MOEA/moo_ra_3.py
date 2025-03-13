@@ -155,11 +155,26 @@ class MooRa3(IntegerProblem):
             dc = self.datacenters[int(dc_idx)]
             instance = self.instances[int(instance_idx)]
             request_idx = self.mapping[idx]
+
             cpu_required = self.requests_cpu[request_idx]
             ram_required = self.requests_ram[request_idx]
             gpu_required = self.requests_gpu[request_idx]
+            latency_required = self.requests_latency[request_idx]
+            request_location = self.requests_location[request_idx]
 
+            latency = self.latency_lookup[(request_location, dc)]
+            # the first requirement to check will be latency here
+            # so we are going to repair the solution if the latency is not respected
+            while latency >= latency_required:
+                dc_idx = (dc_idx + 1) % self.num_datacenters
+                dc = self.datacenters[int(dc_idx)]
+                latency = self.latency_lookup[(request_location, dc)]
+
+            # temporary variables to keep track of the current instance
             dc_instance_key = (dc, instance, price_idx)
+            alg_allocation = dc_instance_key
+            instance_alg_idx = instance_idx
+
             if dc_instance_key not in instance_usage:
                 # cpu and ram are resetted to 0 each time a new instance/bin is opened
                 # here we calculate the duration of the request, for each instance is the time this should be open
@@ -199,14 +214,58 @@ class MooRa3(IntegerProblem):
                 instance_usage[dc_instance_key]['ram'] += ram_required
                 instance_usage[dc_instance_key]['gpu'] += gpu_required
             else:
-                # Allocate the instance to a different instance
-                # And then add the cost
-                instance_usage[dc_instance_key]['cpu'] = cpu_required
-                instance_usage[dc_instance_key]['ram'] = ram_required
-                instance_usage[dc_instance_key]['gpu'] = gpu_required
-                instance_usage[dc_instance_key]['count'] += 1
-                instance_usage[dc_instance_key]['active'].append([starting_time, starting_time + rd])
-
+                # Allocate the instance to a different instance, check if the instance can contain the request
+                cpu_capacity_alg = cpu_capacity
+                ram_capacity_alg = ram_capacity
+                gpu_capacity_alg = gpu_capacity
+                while cpu_required > cpu_capacity_alg or ram_required > ram_capacity_alg or  gpu_required > gpu_capacity_alg:
+                    # try with a different BIN (bigger bins is better) in the same DC
+                    instance_alg_idx = (instance_alg_idx + 1) % 6
+                    instance_alg = self.instances[instance_alg_idx]
+                    alg_allocation = (dc,instance_alg, price_idx)
+                    #print(f'instance_alg_idx: {instance_alg_idx}, Instance: {instance_alg}, instance_alg: {alg_allocation}')
+                    #print(f'Before was {dc_instance_key}')
+                    cpu_capacity_alg = self.cpu_capacity[(dc, instance_alg)]
+                    ram_capacity_alg = self.ram_capacity[(dc, instance_alg)]
+                    gpu_capacity_alg = self.gpu_capacity[(dc, instance_alg)]    
+                if alg_allocation == dc_instance_key:
+                    instance_usage[dc_instance_key]['cpu'] = cpu_required
+                    instance_usage[dc_instance_key]['ram'] = ram_required
+                    instance_usage[dc_instance_key]['gpu'] = gpu_required
+                    instance_usage[dc_instance_key]['count'] += 1
+                    instance_usage[dc_instance_key]['active'].append([starting_time, starting_time + rd])
+                else:
+                    # Allocate the given instance in a new bin 
+                    if alg_allocation not in instance_usage:
+                        instance_usage[alg_allocation] = {'cpu': 0, 'ram': 0, 'gpu': 0, 'count': 1, 
+                                                        'active': [[starting_time, ending_time]], 'costs': []}
+                    else:
+                        # get the current usage of the active bin and try fitting into it
+                        # if it doesn't fit a new bin must be created
+                        icount = instance_usage[alg_allocation]['count'] - 1
+                        # Check if the existing bin can contain the request
+                        current_usage = instance_usage[alg_allocation]['active'][icount]
+                        if instance_usage[alg_allocation]['cpu'] + cpu_required <= cpu_capacity_alg and \
+                        instance_usage[alg_allocation]['ram'] + ram_required <= ram_capacity_alg and \
+                        instance_usage[alg_allocation]['gpu'] + gpu_required <= gpu_capacity_alg:
+                            if starting_time < current_usage[0]:
+                                current_usage[0] = starting_time
+                            if starting_time + rd > current_usage[1]:
+                                current_usage[1] = starting_time + rd
+                            instance_usage[alg_allocation]['active'][icount] = current_usage
+                            instance_usage[alg_allocation]['cpu'] += cpu_required
+                            instance_usage[alg_allocation]['ram'] += ram_required
+                            instance_usage[alg_allocation]['gpu'] += gpu_required
+                        else:
+                            # Open a new instance
+                            instance_usage[alg_allocation]['cpu'] = cpu_required
+                            instance_usage[alg_allocation]['ram'] = ram_required
+                            instance_usage[alg_allocation]['gpu'] = gpu_required
+                            instance_usage[alg_allocation]['count'] += 1
+                            instance_usage[alg_allocation]['active'].append([starting_time, starting_time + rd])
+                # Update the solution with the new allocation
+                solution.variables[self.num_requests + idx] = self.encode(dc_idx, instance_alg_idx, price_idx)
+                            
             # Check CPU and RAM violations
             if instance_usage[dc_instance_key]['cpu'] > cpu_capacity:
                 cpu_violations += max(0, instance_usage[dc_instance_key]['cpu'] - cpu_capacity)
@@ -214,6 +273,15 @@ class MooRa3(IntegerProblem):
                 ram_violations += max(0, instance_usage[dc_instance_key]['ram'] - ram_capacity)
             if instance_usage[dc_instance_key]['gpu'] > gpu_capacity:
                 gpu_violations += max(0, instance_usage[dc_instance_key]['gpu'] - gpu_capacity)
+            
+            if alg_allocation != dc_instance_key:
+                # Check CPU and RAM violations
+                if instance_usage[alg_allocation]['cpu'] > cpu_capacity_alg:
+                    cpu_violations += max(0, instance_usage[alg_allocation]['cpu'] - cpu_capacity_alg)
+                if instance_usage[alg_allocation]['ram'] > ram_capacity_alg:
+                    ram_violations += max(0, instance_usage[alg_allocation]['ram'] - ram_capacity_alg)
+                if instance_usage[alg_allocation]['gpu'] > gpu_capacity_alg:
+                    gpu_violations += max(0, instance_usage[alg_allocation]['gpu'] - gpu_capacity_alg)
         
         # Calculate total cost based on the costs of each instance considered its active period
         for instance_key, values in instance_usage.items():
@@ -232,6 +300,7 @@ class MooRa3(IntegerProblem):
 
         return total_cost, cpu_violations, ram_violations, gpu_violations, instance_usage
 
+    
 
     def calculate_max_latency(self, solution):
         max_latency_per_request = [0] * self.num_requests
@@ -290,11 +359,11 @@ class MooRa3(IntegerProblem):
         total_cost, cpu_violations, ram_violations, gpu_violations, _ = self.calculate_costs(solution)
         qos = self.calculate_qos(solution)
         latency_violations = self.latency_violations(solution)
-        
+                
         solution.objectives[0] = max_latency
         solution.objectives[1] = total_cost
         solution.objectives[2] = qos
-        
+
         # Imposta i vincoli come violazioni (più violazioni => peggio è)
         solution.constraints[0] = self.check_number_of_replicas(solution)
         solution.constraints[1] = cpu_violations
@@ -302,6 +371,22 @@ class MooRa3(IntegerProblem):
         solution.constraints[3] = gpu_violations
         solution.constraints[4] = latency_violations
 
+        max_latency = self.calculate_max_latency(solution)
+        total_cost, cpu_violations, ram_violations, gpu_violations, _ = self.calculate_costs(solution)
+        qos = self.calculate_qos(solution)
+        latency_violations = self.latency_violations(solution)
+        
+        return solution
+    
+    def repair_solution(self, solution: IntegerSolution):
+        # Check if the solution is feasible
+        if sum(solution.constraints) >= 0:
+            return solution
+
+        # Fix the solution
+        for i in range(1, self.number_of_constraints()):
+            if solution.constraints[i] < 0:
+                solution = self.repair_constraint(i, solution)
         
         return solution
 

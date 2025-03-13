@@ -176,6 +176,7 @@ if __name__ == "__main__":
 
         algorithms = []
 
+        """
         algorithms.append(
             GDE3(
                 problem=problem,
@@ -186,7 +187,7 @@ if __name__ == "__main__":
                 population_evaluator=MultiprocessEvaluator(processes=8),
             )
         )
-
+        """
         algorithms.append(
             IBEA(
                 problem=problem,
@@ -201,7 +202,7 @@ if __name__ == "__main__":
                 termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
             )
         )
-
+        """
         algorithms.append(
             MOEAD(
                 problem=problem,
@@ -220,7 +221,8 @@ if __name__ == "__main__":
                 weight_files_path="resources/MOEAD_weights",
                 termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
             )
-        )
+        )"
+        """
 
         algorithms.append(
             SPEA2(
@@ -318,7 +320,7 @@ if __name__ == "__main__":
 
             for idx, s in enumerate(front):
                 print(
-                    f"F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}"
+                    f"F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}, Constraints: {s.constraints}"
                 )
                 s.number_of_objectives = 3
                 _, _, _, _, data = problem.calculate_costs(s)
