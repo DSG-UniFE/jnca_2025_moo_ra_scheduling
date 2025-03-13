@@ -115,7 +115,7 @@ class MooRa3(IntegerProblem):
         # 18 slots per datacenter in the encoding vector
         # 3 combination of prices: on-demand, reserved, spot
         #print(f'dc_idx: {dc_idx}, instance_idx: {instance_idx}, price_idx: {price_idx}')
-        return dc_idx * 18 + instance_idx * 3 + price_idx
+        return dc_idx * (len(self.instances) * 3) + instance_idx * 3 + price_idx
 
     def decode(self, value):
         dc_idx = value // 18
@@ -141,6 +141,8 @@ class MooRa3(IntegerProblem):
         # with the starting time lower than all the others to the request with the starting
         #  time higher than all the others + duration
 
+        latency_violations_before = self.latency_violations(solution)
+
         # keep track of how time long is the time - horizon of each instance
         min_start_time = min(solution.variables[:self.num_requests])
         max_end_time = 0
@@ -150,6 +152,7 @@ class MooRa3(IntegerProblem):
                 max_end_time = et
         total_time = max_end_time - min_start_time
 
+        check_variables = []
         for idx, value in enumerate(svariables):
             dc_idx, instance_idx, price_idx = self.decode(value)
             dc = self.datacenters[int(dc_idx)]
@@ -165,9 +168,10 @@ class MooRa3(IntegerProblem):
             latency = self.latency_lookup[(request_location, dc)]
             # the first requirement to check will be latency here
             # so we are going to repair the solution if the latency is not respected
-            while latency >= latency_required:
+            while latency > latency_required:
                 dc_idx = (dc_idx + 1) % self.num_datacenters
                 dc = self.datacenters[int(dc_idx)]
+                #print(dc_idx, dc, latency, latency_required)
                 latency = self.latency_lookup[(request_location, dc)]
 
             # temporary variables to keep track of the current instance
@@ -263,8 +267,10 @@ class MooRa3(IntegerProblem):
                             instance_usage[alg_allocation]['gpu'] = gpu_required
                             instance_usage[alg_allocation]['count'] += 1
                             instance_usage[alg_allocation]['active'].append([starting_time, starting_time + rd])
-                # Update the solution with the new allocation
-                solution.variables[self.num_requests + idx] = self.encode(dc_idx, instance_alg_idx, price_idx)
+            # Update the solution with the new allocation
+
+            solution.variables[self.num_requests + idx] = self.encode(dc_idx, instance_alg_idx, price_idx)
+            check_variables.append(self.encode(dc_idx, instance_alg_idx, price_idx))
                             
             # Check CPU and RAM violations
             if instance_usage[dc_instance_key]['cpu'] > cpu_capacity:
@@ -297,6 +303,11 @@ class MooRa3(IntegerProblem):
         
         total_cost = sum(total_costs.values())
         total_costs['total_cost'] = total_cost
+
+        latency_violations = self.latency_violations(solution)
+        if (latency_violations > 0):
+            print(f'Latency violations before: {latency_violations_before} after: {latency_violations}, process_id: {os.getpid()}')
+            print(f'Variables: {solution.variables[self.num_requests:]}')
 
         return total_cost, cpu_violations, ram_violations, gpu_violations, instance_usage
 
@@ -355,6 +366,7 @@ class MooRa3(IntegerProblem):
         return qos
 
     def evaluate(self, solution: IntegerSolution) -> IntegerSolution:
+        
         max_latency = self.calculate_max_latency(solution)
         total_cost, cpu_violations, ram_violations, gpu_violations, _ = self.calculate_costs(solution)
         qos = self.calculate_qos(solution)
@@ -370,23 +382,6 @@ class MooRa3(IntegerProblem):
         solution.constraints[2] = ram_violations
         solution.constraints[3] = gpu_violations
         solution.constraints[4] = latency_violations
-
-        max_latency = self.calculate_max_latency(solution)
-        total_cost, cpu_violations, ram_violations, gpu_violations, _ = self.calculate_costs(solution)
-        qos = self.calculate_qos(solution)
-        latency_violations = self.latency_violations(solution)
-        
-        return solution
-    
-    def repair_solution(self, solution: IntegerSolution):
-        # Check if the solution is feasible
-        if sum(solution.constraints) >= 0:
-            return solution
-
-        # Fix the solution
-        for i in range(1, self.number_of_constraints()):
-            if solution.constraints[i] < 0:
-                solution = self.repair_constraint(i, solution)
         
         return solution
 
