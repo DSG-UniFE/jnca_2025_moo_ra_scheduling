@@ -299,10 +299,6 @@ def main():
                 objsrandomsearch = objective_values
                 algname = "Random Search"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
-            elif "Genetic" in filename:
-                objsga = objective_values
-                algname = "Genetic"
-                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
 
             # algname = filename.split('.')[0]
             # xlabel = src_str[0:2].lower()
