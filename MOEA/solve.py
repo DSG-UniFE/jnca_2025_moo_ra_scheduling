@@ -1,4 +1,5 @@
-from moo_ra_3 import MooRa3
+#from moo_ra_3 import MooRa3
+from moo_ra_4 import MooRa4
 
 from mspso import MSPSO
 
@@ -171,7 +172,7 @@ if __name__ == "__main__":
         # clusters = ["Cloud", "Fog Tier 2", "Fog Tier 1", "Edge Tier 2", "Edge Tier 1"]
         reference_point = [7000, 300, 0.040]
 
-        problem = MooRa3(service_file)
+        problem = MooRa4(service_file)
         problem_name = problem.name()
 
         algorithms = []
@@ -187,7 +188,6 @@ if __name__ == "__main__":
                 population_evaluator=MultiprocessEvaluator(processes=8),
             )
         )
-        """
         algorithms.append(
             IBEA(
                 problem=problem,
@@ -202,7 +202,6 @@ if __name__ == "__main__":
                 termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
             )
         )
-        """
         algorithms.append(
             MOEAD(
                 problem=problem,
@@ -221,7 +220,7 @@ if __name__ == "__main__":
                 weight_files_path="resources/MOEAD_weights",
                 termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
             )
-        )"
+        )
         """
 
         algorithms.append(
