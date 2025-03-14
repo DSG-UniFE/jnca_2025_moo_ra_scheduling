@@ -169,9 +169,6 @@ if __name__ == "__main__":
 
         print("Processing file: ", service_file)
 
-        # clusters = ["Cloud", "Fog Tier 2", "Fog Tier 1", "Edge Tier 2", "Edge Tier 1"]
-        reference_point = [7000, 300, 0.040]
-
         problem = MooRa4(service_file)
         problem_name = problem.name()
 
