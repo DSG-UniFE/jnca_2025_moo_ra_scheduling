@@ -1,4 +1,5 @@
-from moo_ra_3 import MooRa3
+#from moo_ra_3 import MooRa3
+from moo_ra_4 import MooRa4
 
 from mspso import MSPSO
 
@@ -171,11 +172,12 @@ if __name__ == "__main__":
         # clusters = ["Cloud", "Fog Tier 2", "Fog Tier 1", "Edge Tier 2", "Edge Tier 1"]
         reference_point = [7000, 300, 0.040]
 
-        problem = MooRa3(service_file)
+        problem = MooRa4(service_file)
         problem_name = problem.name()
 
         algorithms = []
 
+        """
         algorithms.append(
             GDE3(
                 problem=problem,
@@ -186,7 +188,6 @@ if __name__ == "__main__":
                 population_evaluator=MultiprocessEvaluator(processes=8),
             )
         )
-
         algorithms.append(
             IBEA(
                 problem=problem,
@@ -201,7 +202,6 @@ if __name__ == "__main__":
                 termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
             )
         )
-
         algorithms.append(
             MOEAD(
                 problem=problem,
@@ -221,6 +221,7 @@ if __name__ == "__main__":
                 termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
             )
         )
+        """
 
         algorithms.append(
             SPEA2(
@@ -318,7 +319,7 @@ if __name__ == "__main__":
 
             for idx, s in enumerate(front):
                 print(
-                    f"F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}"
+                    f"F1: {s.objectives[0]}, F2: {s.objectives[1]}, F3: {s.objectives[2]}, Constraints: {s.constraints}"
                 )
                 s.number_of_objectives = 3
                 _, _, _, _, data = problem.calculate_costs(s)
