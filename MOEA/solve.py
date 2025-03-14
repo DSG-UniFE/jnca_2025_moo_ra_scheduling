@@ -174,52 +174,6 @@ if __name__ == "__main__":
 
         algorithms = []
 
-        """
-        algorithms.append(
-            GDE3(
-                problem=problem,
-                population_size=100,
-                cr=0.5,
-                f=0.5,
-                termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
-                population_evaluator=MultiprocessEvaluator(processes=8),
-            )
-        )
-        algorithms.append(
-            IBEA(
-                problem=problem,
-                kappa=1.0,
-                population_size=100,
-                offspring_population_size=100,
-                mutation=IntegerPolynomialMutation(
-                    probability=1.0 / problem.number_of_variables(),
-                    distribution_index=20,
-                ),
-                crossover=IntegerSBXCrossover(probability=1.0, distribution_index=20),
-                termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
-            )
-        )
-        algorithms.append(
-            MOEAD(
-                problem=problem,
-                population_size=100,
-                crossover=DifferentialEvolutionCrossover(CR=1.0, F=0.5),
-                mutation=IntegerPolynomialMutation(
-                    probability=1.0 / problem.number_of_variables(),
-                    distribution_index=20,
-                ),
-                aggregation_function=PenaltyBoundaryIntersection(
-                    dimension=problem.number_of_objectives()
-                ),
-                neighbor_size=20,
-                neighbourhood_selection_probability=0.9,
-                max_number_of_replaced_solutions=2,
-                weight_files_path="resources/MOEAD_weights",
-                termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
-            )
-        )
-        """
-
         algorithms.append(
             SPEA2(
                 problem=problem,
