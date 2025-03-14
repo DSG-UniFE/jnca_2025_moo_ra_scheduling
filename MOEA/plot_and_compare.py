@@ -180,7 +180,11 @@ def dominance_based_gap(meta_heuristic_solutions, ilp_solutions):
         )
         gaps.append(gap)
 
-    min_gap = np.min(gaps, axis=0)
+    try:
+        min_gap = np.min(gaps, axis=0)
+    except ValueError as e:
+        print(f"Error: {e}")
+        min_gap = None
 
     return min_gap
 
@@ -255,8 +259,6 @@ def main():
         objsnsgaii = []
         objsnsgaiii = []
         objsmspso = []
-        objsibea = []
-        objsmoead = []
         objsspea2 = []
         objsrandomsearch = []
         objsga = []
@@ -288,14 +290,6 @@ def main():
             elif "MSPSO" in filename:
                 objsmspso = objective_values
                 algname = "MSPSO"
-                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
-            elif "IBEA" in filename:
-                objsibea = objective_values
-                algname = "IBEA"
-                f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
-            elif "MOEAD" in filename:
-                objsmoead = objective_values
-                algname = "MOEAD"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
             elif "SPEA2" in filename:
                 objsspea2 = objective_values
@@ -349,24 +343,17 @@ def main():
             + objsnsgaii
             + objsnsgaiii
             + objsmspso
-            + objsibea
-            + objsmoead
             + objsspea2
         )
 
         reference_point = objs.max(axis=0) * 1.1
         reference_point = reference_point.tolist()
-        print(
-            f"Len of objsnsgaii: {len(objsnsgaii)} objsnsgaiii: {len(objsnsgaiii)} mspso: {len(objsmspso)}"
-        )
         hv = HyperVolume(reference_point)
         hv_mocell = hv.compute(np.array(objsmocell))
         hv_nsgaii = hv.compute(np.array(objsnsgaii))
         hv_nsgaiii = hv.compute(np.array(objsnsgaiii))
         hv_mspso = hv.compute(np.array(objsmspso))
-        hv_moead = hv.compute(np.array(objsmoead))
         hv_spea2 = hv.compute(np.array(objsspea2))
-        hv_ibea = hv.compute(np.array(objsibea))
         hv_randomsearch = hv.compute(np.array(objsrandomsearch))
         hv_moilp_gap00 = hv.compute(np.array(objsilpgap00))
         hv_moilp_gap005 = hv.compute(np.array(objsilpgap005))
@@ -378,9 +365,7 @@ def main():
         igd_nsgaii = igd.compute(np.array(objsnsgaii))
         igd_nsgaiii = igd.compute(np.array(objsnsgaiii))
         igd_mspso = igd.compute(np.array(objsmspso))
-        igd_moead = igd.compute(np.array(objsmoead))
         igd_spea2 = igd.compute(np.array(objsspea2))
-        igd_ibea = igd.compute(np.array(objsibea))
         igs_randomsearch = igd.compute(np.array(objsrandomsearch))
         ilp_results_present = True
         try:
@@ -398,9 +383,7 @@ def main():
             f.write(f"NSGAII Hypervolume: {hv_nsgaii}\n")
             f.write(f"NSGAIII Hypervolume: {hv_nsgaiii}\n")
             f.write(f"MSPSO Hypervolume: {hv_mspso}\n")
-            f.write(f"MOEAD Hypervolume: {hv_moead}\n")
             f.write(f"SPEA2 Hypervolume: {hv_spea2}\n")
-            f.write(f"IBEA Hypervolume: {hv_ibea}\n")
             f.write(f"Random Search Hypervolume: {hv_randomsearch}\n")
             if ilp_results_present:
                 f.write(f"\n\n********** ILP **********\n\n")
@@ -414,9 +397,7 @@ def main():
             f.write(f"NSGAII IGD: {igd_nsgaii}\n")
             f.write(f"NSGAIII IGD: {igd_nsgaiii}\n")
             f.write(f"MSPSO IGD: {igd_mspso}\n")
-            f.write(f"MOEAD IGD: {igd_moead}\n")
             f.write(f"SPEA2 IGD: {igd_spea2}\n")
-            f.write(f"IBEA IGD: {igd_ibea}\n")
             f.write(f"Random Search IGD: {igs_randomsearch}\n")
             if ilp_results_present:
                 f.write(f"\n\n********** ILP **********\n\n")
@@ -460,28 +441,12 @@ def main():
                     f"MSPSO Dominance Gap 0.75: {dominance_based_gap(np.array(objsmspso), objsilpgap075)}\n"
                 )
                 f.write(
-                    f"MOEAD Dominance Gap: {dominance_based_gap(np.array(objsmoead), objsilpgap00)}\n"
-                    f"MOEAD Dominance Gap 0.05: {dominance_based_gap(np.array(objsmoead), objsilpgap005)}\n"
-                    f"MOEAD Dominance Gap 0.1: {dominance_based_gap(np.array(objsmoead), objsilpgap01)}\n"
-                    f"MOEAD Dominance Gap 0.25: {dominance_based_gap(np.array(objsmoead), objsilpgap025)}\n"
-                    f"MOEAD Dominance Gap 0.5: {dominance_based_gap(np.array(objsmoead), objsilpgap050)}\n"
-                    f"MOEAD Dominance Gap 0.75: {dominance_based_gap(np.array(objsmoead), objsilpgap075)}\n"
-                )
-                f.write(
                     f"SPEA2 Dominance Gap: {dominance_based_gap(np.array(objsspea2), objsilpgap00)}\n"
                     f"SPEA2 Dominance Gap 0.05: {dominance_based_gap(np.array(objsspea2), objsilpgap005)}\n"
                     f"SPEA2 Dominance Gap 0.1: {dominance_based_gap(np.array(objsspea2), objsilpgap01)}\n"
                     f"SPEA2 Dominance Gap 0.25: {dominance_based_gap(np.array(objsspea2), objsilpgap025)}\n"
                     f"SPEA2 Dominance Gap 0.5: {dominance_based_gap(np.array(objsspea2), objsilpgap050)}\n"
                     f"SPEA2 Dominance Gap 0.75: {dominance_based_gap(np.array(objsspea2), objsilpgap075)}\n"
-                )
-                f.write(
-                    f"IBEA Dominance Gap: {dominance_based_gap(np.array(objsibea), objsilpgap00)}\n"
-                    f"IBEA Dominance Gap 0.05: {dominance_based_gap(np.array(objsibea), objsilpgap005)}\n"
-                    f"IBEA Dominance Gap 0.1: {dominance_based_gap(np.array(objsibea), objsilpgap01)}\n"
-                    f"IBEA Dominance Gap 0.25: {dominance_based_gap(np.array(objsibea), objsilpgap025)}\n"
-                    f"IBEA Dominance Gap 0.5: {dominance_based_gap(np.array(objsibea), objsilpgap050)}\n"
-                    f"IBEA Dominance Gap 0.75: {dominance_based_gap(np.array(objsibea), objsilpgap075)}\n"
                 )
                 f.write(
                     f"Random Search Dominance Gap: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap00)}\n"

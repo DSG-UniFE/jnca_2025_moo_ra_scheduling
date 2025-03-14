@@ -8,11 +8,11 @@ from jmetal.core.problem import IntegerProblem, FloatProblem
 from jmetal.core.solution import IntegerSolution, FloatSolution
 
 #add service file in the constructor
-class MooRa3(IntegerProblem):
+class MooRa4(IntegerProblem):
     """ Multi-Cluster problem """
 
     def __init__(self, service_file):
-        super(MooRa3, self).__init__()
+        super(MooRa4, self).__init__()
         self.load_requests_data(service_file)
         self.load_instances_data('./cnsm_data/pricing.csv', './cnsm_data/AWS_EC2_Latency.csv')
         print(f'Number of datacenters: {self.num_datacenters} and number of requests: {self.num_requests}')
@@ -164,6 +164,10 @@ class MooRa3(IntegerProblem):
             gpu_required = self.requests_gpu[request_idx]
             latency_required = self.requests_latency[request_idx]
             request_location = self.requests_location[request_idx]
+            rd = self.requests_duration[request_idx]
+            # we need to find the starting time of the request
+            starting_time = solution.variables[request_idx]
+            ending_time = starting_time + rd
 
             latency = self.latency_lookup[(request_location, dc)]
             # the first requirement to check will be latency here
@@ -179,127 +183,74 @@ class MooRa3(IntegerProblem):
             alg_allocation = dc_instance_key
             instance_alg_idx = instance_idx
 
-            if dc_instance_key not in instance_usage:
-                # cpu and ram are resetted to 0 each time a new instance/bin is opened
-                # here we calculate the duration of the request, for each instance is the time this should be open
-                instance_usage[dc_instance_key] = {'cpu': 0, 'ram': 0, 'gpu': 0, 'count': 0, 
-                                                   'active': [], 'costs': []}
-                
             cpu_capacity = self.cpu_capacity[(dc, instance)]
             ram_capacity = self.ram_capacity[(dc, instance)]
             gpu_capacity = self.gpu_capacity[(dc, instance)]
 
-            rd = self.requests_duration[request_idx]
-            # we need to find the starting time of the request
-            starting_time = solution.variables[request_idx]
-            ending_time = starting_time + rd
+            while cpu_capacity < cpu_required or ram_capacity < ram_required or gpu_capacity < gpu_required:
+                # try with a different BIN (bigger bins is better)
+                instance_alg_idx = (instance_alg_idx + 1) % 6
+                instance_alg = self.instances[instance_alg_idx]
+                alg_allocation = (dc, instance_alg, price_idx)
+                #print(f'instance_alg_idx: {instance_alg_idx}, Instance: {instance_alg}, instance_alg: {alg_allocation}')
+                #print(f'Before was {dc_instance_key}')
+                cpu_capacity = self.cpu_capacity[(dc, instance_alg)]
+                ram_capacity = self.ram_capacity[(dc, instance_alg)]
+                gpu_capacity = self.gpu_capacity[(dc, instance_alg)]
 
-            if (instance_usage[dc_instance_key]['cpu'] + cpu_required <= cpu_capacity) and \
-            (instance_usage[dc_instance_key]['ram'] + ram_required <= ram_capacity) and \
-            (instance_usage[dc_instance_key]['gpu'] + gpu_required <= gpu_capacity):
-                # Allocate the given instance in the same bin
-                if instance_usage[dc_instance_key]['active'] == []:
-                    instance_usage[dc_instance_key]['active'].append([starting_time, ending_time])
-                    instance_usage[dc_instance_key]['count'] += 1
-                else:
-                    # get the current usage
-                    # instance count 
-                    icount = instance_usage[dc_instance_key]['count'] - 1
-                    #print(f'icount: {icount}')
-                    #print(f'dc_instance_key: {dc_instance_key}')
-                    #print("instance_usage: ", instance_usage[dc_instance_key])
-                    current_usage = instance_usage[dc_instance_key]['active'][icount]
-                    if starting_time < current_usage[0]:
-                        current_usage[0] = starting_time
-                    if starting_time + rd > current_usage[1]:
-                        current_usage[1] = starting_time + rd
-                    instance_usage[dc_instance_key]['active'][icount] = current_usage
-                instance_usage[dc_instance_key]['cpu'] += cpu_required
-                instance_usage[dc_instance_key]['ram'] += ram_required
-                instance_usage[dc_instance_key]['gpu'] += gpu_required
+
+            if alg_allocation not in instance_usage:
+                # cpu and ram are resetted to 0 each time a new instance/bin is opened
+                # here we calculate the duration of the request, for each instance is the time this should be open
+                instance_usage[alg_allocation] = [{'cpu': cpu_required, 'ram': ram_required, 
+                                                   'gpu': gpu_required, 'active': [starting_time, ending_time]}]
+                
             else:
-                # Allocate the instance to a different instance, check if the instance can contain the request
-                cpu_capacity_alg = cpu_capacity
-                ram_capacity_alg = ram_capacity
-                gpu_capacity_alg = gpu_capacity
-                while cpu_required > cpu_capacity_alg or ram_required > ram_capacity_alg or  gpu_required > gpu_capacity_alg:
-                    # try with a different BIN (bigger bins is better) in the same DC
-                    instance_alg_idx = (instance_alg_idx + 1) % 6
-                    instance_alg = self.instances[instance_alg_idx]
-                    alg_allocation = (dc,instance_alg, price_idx)
-                    #print(f'instance_alg_idx: {instance_alg_idx}, Instance: {instance_alg}, instance_alg: {alg_allocation}')
-                    #print(f'Before was {dc_instance_key}')
-                    cpu_capacity_alg = self.cpu_capacity[(dc, instance_alg)]
-                    ram_capacity_alg = self.ram_capacity[(dc, instance_alg)]
-                    gpu_capacity_alg = self.gpu_capacity[(dc, instance_alg)]    
-                if alg_allocation == dc_instance_key:
-                    instance_usage[dc_instance_key]['cpu'] = cpu_required
-                    instance_usage[dc_instance_key]['ram'] = ram_required
-                    instance_usage[dc_instance_key]['gpu'] = gpu_required
-                    instance_usage[dc_instance_key]['count'] += 1
-                    instance_usage[dc_instance_key]['active'].append([starting_time, starting_time + rd])
-                else:
-                    # Allocate the given instance in a new bin 
-                    if alg_allocation not in instance_usage:
-                        instance_usage[alg_allocation] = {'cpu': cpu_required, 'ram': ram_required, 'gpu': gpu_required, 'count': 1, 
-                                                        'active': [[starting_time, ending_time]], 'costs': []}
-                    else:
-                        # get the current usage of the active bin and try fitting into it
-                        # if it doesn't fit a new bin must be created
-                        icount = instance_usage[alg_allocation]['count'] - 1
-                        # Check if the existing bin can contain the request
-                        current_usage = instance_usage[alg_allocation]['active'][icount]
-                        if instance_usage[alg_allocation]['cpu'] + cpu_required <= cpu_capacity_alg and \
-                        instance_usage[alg_allocation]['ram'] + ram_required <= ram_capacity_alg and \
-                        instance_usage[alg_allocation]['gpu'] + gpu_required <= gpu_capacity_alg:
-                            if starting_time < current_usage[0]:
-                                current_usage[0] = starting_time
-                            if starting_time + rd > current_usage[1]:
-                                current_usage[1] = starting_time + rd
-                            instance_usage[alg_allocation]['active'][icount] = current_usage
-                            instance_usage[alg_allocation]['cpu'] += cpu_required
-                            instance_usage[alg_allocation]['ram'] += ram_required
-                            instance_usage[alg_allocation]['gpu'] += gpu_required
-                        else:
-                            # Open a new instance
-                            instance_usage[alg_allocation]['cpu'] = cpu_required
-                            instance_usage[alg_allocation]['ram'] = ram_required
-                            instance_usage[alg_allocation]['gpu'] = gpu_required
-                            instance_usage[alg_allocation]['count'] += 1
-                            instance_usage[alg_allocation]['active'].append([starting_time, starting_time + rd])
-            # Update the solution with the new allocation
+                # Check if there are existing bins for those are already open to contain the request
+                allocated = False
+                for bin_idx, bin_values in enumerate(instance_usage[alg_allocation]):
+                    if bin_values['active'][1] <= starting_time:
+                        # Check if the current request can be contained in the bin
+                        if bin_values['cpu'] + cpu_required <= cpu_capacity and \
+                        bin_values['ram'] + ram_required <= ram_capacity and \
+                        bin_values['gpu'] + gpu_required <= gpu_capacity:
+                        # Check if the current request can be contained in the bin
+                            bin_values['cpu'] += cpu_required
+                            bin_values['ram'] += ram_required
+                            bin_values['gpu'] += gpu_required
+                            bin_values['active'][1] = ending_time
+                            allocated = True
+                        break
+                if not allocated:
+                    # Open a new bin for the instance
+                    instance_usage[alg_allocation].append({'cpu': cpu_required, 'ram': ram_required,
+                                                          'gpu': gpu_required, 'active': [starting_time, ending_time]})
 
             solution.variables[self.num_requests + idx] = self.encode(dc_idx, instance_alg_idx, price_idx)
             check_variables.append(self.encode(dc_idx, instance_alg_idx, price_idx))
                             
-            # Check CPU and RAM violations
-            if instance_usage[dc_instance_key]['cpu'] > cpu_capacity:
-                cpu_violations += max(0, instance_usage[dc_instance_key]['cpu'] - cpu_capacity)
-            if instance_usage[dc_instance_key]['ram'] > ram_capacity:
-                ram_violations += max(0, instance_usage[dc_instance_key]['ram'] - ram_capacity)
-            if instance_usage[dc_instance_key]['gpu'] > gpu_capacity:
-                gpu_violations += max(0, instance_usage[dc_instance_key]['gpu'] - gpu_capacity)
-            
-            if alg_allocation != dc_instance_key:
-                # Check CPU and RAM violations
-                if instance_usage[alg_allocation]['cpu'] > cpu_capacity_alg:
-                    cpu_violations += max(0, instance_usage[alg_allocation]['cpu'] - cpu_capacity_alg)
-                if instance_usage[alg_allocation]['ram'] > ram_capacity_alg:
-                    ram_violations += max(0, instance_usage[alg_allocation]['ram'] - ram_capacity_alg)
-                if instance_usage[alg_allocation]['gpu'] > gpu_capacity_alg:
-                    gpu_violations += max(0, instance_usage[alg_allocation]['gpu'] - gpu_capacity_alg)
         
         # Calculate total cost based on the costs of each instance considered its active period
         for instance_key, values in instance_usage.items():
-            for idx, active_period in enumerate(values['active']):
+            for idx, bin in enumerate(values):
                 dc, instance, price_idx = instance_key
+                s = bin['active'][0]
+                e = bin['active'][1]
+                activation_time = e - s
                 if price_idx == 0:
-                    total_costs['On-Demand'] += self.cost_on_demand[(dc, instance)] * (active_period[1] - active_period[0])
+                    total_costs['On-Demand'] += self.cost_on_demand[(dc, instance)] * activation_time
                 elif price_idx == 1:
                     # Reserved instances are open from time 0 to max duration time
                     total_costs['Reserved'] += self.cost_reserved[(dc, instance)] * total_time
                 elif price_idx == 2:
-                    total_costs['Spot'] += self.cost_spot[(dc, instance)] * (active_period[1] - active_period[0])
+                    total_costs['Spot'] += self.cost_spot[(dc, instance)] * activation_time
+                # Check also capacity violations
+                if bin['cpu'] > self.cpu_capacity[(dc, instance)]:
+                    cpu_violations += bin['cpu'] - self.cpu_capacity[(dc, instance)]
+                if bin['ram'] > self.ram_capacity[(dc, instance)]:
+                    ram_violations += bin['ram'] - self.ram_capacity[(dc, instance)]
+                if bin['gpu'] > self.gpu_capacity[(dc, instance)]:
+                    gpu_violations += bin['gpu'] - self.gpu_capacity[(dc, instance)]
         
         total_cost = sum(total_costs.values())
         total_costs['total_cost'] = total_cost
