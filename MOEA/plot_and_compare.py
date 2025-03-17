@@ -161,6 +161,9 @@ def dominance_based_gap(meta_heuristic_solutions, ilp_solutions):
     Returns:
         gaps (numpy array): Dominance-based approximation gaps.
     """
+    if len(ilp_solutions) == 0:
+        return None
+    
     # Initialize an array to store the minimum gap for each metaheuristic solution
     gaps = []
 
@@ -403,7 +406,7 @@ def main():
                 f.write(f"ILP Gap 0.25 IGD: {igd_moilp_gap025}\n")
 
         with open(output_file_dominance_gap, "w") as f:
-            if ilp_results_present:
+            if True:
                 f.write(
                     f"MOCell Dominance Gap 0.00: {dominance_based_gap(np.array(objsmocell), objsilpgap00)}\n"
                     f"MOCell Dominance Gap 0.05: {dominance_based_gap(np.array(objsmocell), objsilpgap005)}\n"

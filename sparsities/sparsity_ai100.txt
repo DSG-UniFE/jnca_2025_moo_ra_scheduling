@@ -8,3 +8,4 @@ Random Search Sparsity: 8823.560430595875
 
 ********** ILP **********
 
+ILP Gap 0.0 Sparsity: 20.192119665219025
