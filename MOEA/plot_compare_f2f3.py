@@ -1,9 +1,3 @@
-from jmetal.algorithm.multiobjective.nsgaiii import NSGAII, NSGAIII
-from jmetal.algorithm.multiobjective.nsgaiii import UniformReferenceDirectionFactory
-from jmetal.operator import IntegerPolynomialMutation, IntegerSBXCrossover
-from jmetal.util.comparator import DominanceWithConstraintsComparator
-from jmetal.util.evaluator import DaskEvaluator, MultiprocessEvaluator
-from jmetal.util.termination_criterion import StoppingByEvaluations
 from jmetal.core.quality_indicator import InvertedGenerationalDistance
 
 from jmetal.util.solution import get_non_dominated_solutions
@@ -73,7 +67,7 @@ We have 3 objectives in this case
 """
 
 
-def plot_3d_front(front, alg_name, output_dir):
+def plot_2d_front(front, alg_name, output_dir):
     # Convert front to a numpy array
     front = np.array(front)
     print(f"Alg name: {alg_name}")
@@ -81,35 +75,24 @@ def plot_3d_front(front, alg_name, output_dir):
     # font = {'size': 10}
     # plt.rc('font', **font)
     fig = plt.figure(figsize=(10, 6))
-    ax = fig.add_subplot(projection="3d")
+    ax = fig.add_subplot()
     # ax.set_title(f'{alg_name}')
     # increase scatter size
-    ax.scatter(front[:, 0], front[:, 1], front[:, 2], alpha=0.8)
+    ax.scatter(front[:, 0], front[:, 1], alpha=0.8)
     # Set the camera view angle to 30, 60
     ax.view_init(30, 60)
     # Set label for x, y, z
-    ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 12})
-    ax.set_ylabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 12})
-    ax.set_zlabel(
-        "Avg. Interruption Frequency (f3)", labelpad=8, fontdict={"fontsize": 12}
-    )
-
-    # reduce tick font size
-    # xlimit 70 175
-    # ylimit 150 1200
-    # zlimit 0 0.050
-    ax.set_xlim(70, 175)
-    ax.set_ylim(150, 1200)
-    ax.set_zlim(0, 0.050)
-    ax.set_xticklabels(ax.get_xticks(), fontsize=12)
+    ax.set_xlabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 12})
+    ax.set_ylabel("Avg. Interruption Frequency (f3)", labelpad=10, fontdict={"fontsize": 12})
+    #ax.set_xlim(70, 175)
+    #ax.set_ylim(150, 1200)
+    #ax.set_xticklabels(ax.get_xticks(), fontsize=12)
     ax.set_yticklabels(ax.get_yticks(), fontsize=12)
-    ax.set_zticklabels(ax.get_zticks(), fontsize=12)
     # ax.tick_params(axis='both', which='major', labelsize=8)
-    ax.view_init(elev=20, azim=45)
     plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.00)
     # plt.subplots_adjust(left=0.10, right=0.90, top=0.90, bottom=0.10)
     # plt.tight_layout()
-    save_path = os.path.join(output_dir, f"Fig-3d-{alg_name}.pdf")
+    save_path = os.path.join(output_dir, f"Fig-2d-{alg_name}.pdf")
     plt.savefig(save_path, bbox_inches="tight", pad_inches=0.4)
     plt.close()
 
@@ -118,7 +101,6 @@ def plot_3d_front(front, alg_name, output_dir):
 Using glob find all the files in the directory that contains
 VAR and a string given as argument
 """
-
 
 def find_files(pattern):
     files = glob.glob(f"*FUN*{pattern}")
@@ -202,14 +184,14 @@ def select_best_reference(ilp_solutions):
 
 def main():
     # Glob for each direcory within results
-    dir_usecases_meta = glob.glob("results/*/")
+    dir_usecases_meta = glob.glob("results_f2f3/*/")
     dir_usecases_ilp = glob.glob("../results/usecase/*/")
 
     # Retrieve the objectives from the ILP csv files
     for usecase in dir_usecases_ilp:
-        output_dir = os.path.join(usecase, "objectives")
+        output_dir = os.path.join(usecase, "objectives_f2_f3")
         os.makedirs(output_dir, exist_ok=True)
-        objectives_files_ilp = glob.glob(f"{usecase}f1_f2_f3/results*.csv")
+        objectives_files_ilp = glob.glob(f"{usecase}f2_f3/results*.csv")
         for objective_file in objectives_files_ilp:
             retrieve_objectives(objective_file, output_dir)
 
@@ -219,15 +201,15 @@ def main():
     # files = find_files(src_str)
 
     for usecase in dir_usecases_meta:
-        output_dir_sparsities = os.path.dirname("../sparsities/")
+        output_dir_sparsities = os.path.dirname("../sparsities_f2f3/")
         usecase_name = usecase.split("/")[1]
         os.makedirs(output_dir_sparsities, exist_ok=True)
-        output_dir_hv = os.path.dirname("../hypervolumes/")
+        output_dir_hv = os.path.dirname("../hypervolumes_f2f3/")
         os.makedirs(output_dir_hv, exist_ok=True)
-        output_dir_igds = os.path.dirname("../igds/")
+        output_dir_igds = os.path.dirname("../igds_f2f3/")
         os.makedirs(output_dir_igds, exist_ok=True)
         # Create directory for dominance approximation gaps
-        output_dir_dominance_gaps = os.path.dirname("../dominance_gaps/")
+        output_dir_dominance_gaps = os.path.dirname("../dominance_gaps_f2f3/")
         os.makedirs(output_dir_dominance_gaps, exist_ok=True)
         output_file_sparsity = os.path.join(
             output_dir_sparsities, f"sparsity_{usecase_name}.txt"
@@ -244,7 +226,7 @@ def main():
         print(f"Usecase: {usecase}")
         objectives_files_meta = glob.glob(f"results/{usecase}/*.FUN.*")
         objectives_files_ilp = glob.glob(
-            f"../results/usecase/{usecase}/objectives/*.txt"
+            f"../results/usecase/{usecase}/objectives_f2_f3/*.txt"
         )
         # print(objectives_files_meta)
         # print(objectives_files_ilp)
@@ -303,7 +285,7 @@ def main():
             # algname = filename.split('.')[0]
             # xlabel = src_str[0:2].lower()
             # ylabel = src_str[2:4].lower()
-            plot_3d_front(objective_values, algname, output_dir)  # , xlabel, ylabel)
+            plot_2d_front(objective_values, algname, output_dir)  # , xlabel, ylabel)
 
         # Add sparsity calculation related to ILP for each gap
         f_sparsity.write(f"\n\n********** ILP **********\n\n")
@@ -413,7 +395,7 @@ def main():
                     f"MOCell Dominance Gap 0.75: {dominance_based_gap(np.array(objsmocell), objsilpgap075)}\n"
                 )
                 f.write(
-                    f"NSGAII Dominance Gap: {dominance_based_gap(np.array(objsnsgaii), objsilpgap00)}\n"
+                    f"NSGAII Dominance Gap 0.00: {dominance_based_gap(np.array(objsnsgaii), objsilpgap00)}\n"
                     f"NSGAII Dominance Gap 0.05: {dominance_based_gap(np.array(objsnsgaii), objsilpgap005)}\n"
                     f"NSGAII Dominance Gap 0.1: {dominance_based_gap(np.array(objsnsgaii), objsilpgap01)}\n"
                     f"NSGAII Dominance Gap 0.25: {dominance_based_gap(np.array(objsnsgaii), objsilpgap025)}\n"
@@ -421,7 +403,7 @@ def main():
                     f"NSGAII Dominance Gap 0.75: {dominance_based_gap(np.array(objsnsgaii), objsilpgap075)}\n"
                 )
                 f.write(
-                    f"NSGAIII Dominance Gap: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap00)}\n"
+                    f"NSGAIII Dominance Gap 0.00: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap00)}\n"
                     f"NSGAIII Dominance Gap 0.05: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap005)}\n"
                     f"NSGAIII Dominance Gap 0.1: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap01)}\n"
                     f"NSGAIII Dominance Gap 0.25: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap025)}\n"
@@ -429,7 +411,7 @@ def main():
                     f"NSGAIII Dominance Gap 0.75: {dominance_based_gap(np.array(objsnsgaiii), objsilpgap075)}\n"
                 )
                 f.write(
-                    f"MSPSO Dominance Gap: {dominance_based_gap(np.array(objsmspso), objsilpgap00)}\n"
+                    f"MSPSO Dominance Gap 0.00: {dominance_based_gap(np.array(objsmspso), objsilpgap00)}\n"
                     f"MSPSO Dominance Gap 0.05: {dominance_based_gap(np.array(objsmspso), objsilpgap005)}\n"
                     f"MSPSO Dominance Gap 0.1: {dominance_based_gap(np.array(objsmspso), objsilpgap01)}\n"
                     f"MSPSO Dominance Gap 0.25: {dominance_based_gap(np.array(objsmspso), objsilpgap025)}\n"
@@ -437,7 +419,7 @@ def main():
                     f"MSPSO Dominance Gap 0.75: {dominance_based_gap(np.array(objsmspso), objsilpgap075)}\n"
                 )
                 f.write(
-                    f"SPEA2 Dominance Gap: {dominance_based_gap(np.array(objsspea2), objsilpgap00)}\n"
+                    f"SPEA2 Dominance Gap 0.00: {dominance_based_gap(np.array(objsspea2), objsilpgap00)}\n"
                     f"SPEA2 Dominance Gap 0.05: {dominance_based_gap(np.array(objsspea2), objsilpgap005)}\n"
                     f"SPEA2 Dominance Gap 0.1: {dominance_based_gap(np.array(objsspea2), objsilpgap01)}\n"
                     f"SPEA2 Dominance Gap 0.25: {dominance_based_gap(np.array(objsspea2), objsilpgap025)}\n"
@@ -445,7 +427,7 @@ def main():
                     f"SPEA2 Dominance Gap 0.75: {dominance_based_gap(np.array(objsspea2), objsilpgap075)}\n"
                 )
                 f.write(
-                    f"Random Search Dominance Gap: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap00)}\n"
+                    f"Random Search Dominance Gap 0.00: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap00)}\n"
                     f"Random Search Dominance Gap 0.05: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap005)}\n"
                     f"Random Search Dominance Gap 0.1: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap01)}\n"
                     f"Random Search Dominance Gap 0.25: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap025)}\n"
@@ -453,7 +435,7 @@ def main():
                     f"Random Search Dominance Gap 0.75: {dominance_based_gap(np.array(objsrandomsearch), objsilpgap075)}\n"
                 )
                 f.write(
-                    f"GA Dominance Gap: {dominance_based_gap(np.array(objsga), objsilpgap00)}\n"
+                    f"GA Dominance Gap 0.00: {dominance_based_gap(np.array(objsga), objsilpgap00)}\n"
                     f"GA Dominance Gap 0.05: {dominance_based_gap(np.array(objsga), objsilpgap005)}\n"
                     f"GA Dominance Gap 0.1: {dominance_based_gap(np.array(objsga), objsilpgap01)}\n"
                     f"GA Dominance Gap 0.25: {dominance_based_gap(np.array(objsga), objsilpgap025)}\n"

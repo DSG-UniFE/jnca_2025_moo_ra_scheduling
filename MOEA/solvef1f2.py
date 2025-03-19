@@ -181,6 +181,11 @@ if __name__ == '__main__':
 
         for algorithm in algorithms:
             algorithm.run()
-            front = get_non_dominated_solutions(algorithm.result())    
-            logplot_front(front, algorithm)
+            front = get_non_dominated_solutions(algorithm.result()) 
+            for s in front:
+                s.number_of_objectives = 2
+                print(
+                    f"F1: {s.objectives[0]}, F2: {s.objectives[1]}, Constraints: {s.constraints}"
+                )
+            logplot_front(front, algorithm, result_dir, problem_name)
 
