@@ -1,4 +1,3 @@
-from scheduling_ra_f2f3 import SchedulingRAF2F3
 from moo_ra_f2f3 import MooRaF2F3
 
 from mspso import MSPSO
@@ -6,6 +5,9 @@ from mspso import MSPSO
 from jmetal.algorithm.multiobjective.mocell import MOCell
 from jmetal.algorithm.multiobjective.nsgaiii import NSGAII, NSGAIII
 from jmetal.algorithm.multiobjective.nsgaiii import UniformReferenceDirectionFactory
+from jmetal.algorithm.multiobjective.random_search import RandomSearch
+from jmetal.algorithm.multiobjective.spea2 import SPEA2
+
 from jmetal.operator import IntegerPolynomialMutation, IntegerSBXCrossover
 from jmetal.util.comparator import DominanceWithConstraintsComparator
 from jmetal.util.evaluator import DaskEvaluator, MultiprocessEvaluator
@@ -29,20 +31,27 @@ import pandas as pd
 # For HV calculation
 from jmetal.core.quality_indicator import HyperVolume
 import numpy as np
+import os
+import glob
 
 
-def logplot_front(front, algorithm):
-
+def logplot_front(front, algorithm, output_dir, problem_name):
     print(f'Total non-dominated solutions: {len(front)}')
-    print_function_values_to_file(front, f"{algorithm.get_name()}.FUN." + algorithm.label)
-    print_variables_to_file(front,f"{algorithm.get_name()}.VAR." + algorithm.label)
+    fun_file = os.path.join(output_dir, f"{algorithm.get_name()}.FUN.{algorithm.label}")
+    var_file = os.path.join(output_dir, f"{algorithm.get_name()}.VAR.{algorithm.label}")
+    print_function_values_to_file(front, fun_file)
+    print_variables_to_file(front, var_file)
 
     print(f"Algorithm: {algorithm.get_name()}")
     print(f"Problem: {problem.name()}")
     print(f"Computing time: {algorithm.total_computing_time}")
 
-    plot_front = Plot(title='Pareto front approximation', axis_labels=['f2', 'f3'])
-    plot_front.plot(front, label=f"{algorithm.get_name()}-f2-f3", filename=f"{algorithm.get_name()}-f2-f3", format='png')
+    front_filename = os.path.join(
+        output_dir, f"{algorithm.get_name()}-f2-f3"
+    )
+
+    plot_front = Plot(title='Pareto front approximation', axis_labels=['f1', 'f2', 'f3'])
+    plot_front.plot(front, label=f"{algorithm.get_name()}-f2-f3", filename=f"{front_filename}", format='png')
 
 def plot_instance_usage(data, filename: str):
     data_centers = []
@@ -87,119 +96,91 @@ if __name__ == '__main__':
     
     freeze_support()
 
+    # Cycle through service files in services/types
+    services_files = glob.glob("../services/types/*.csv")
 
-    #problem = SchedulingRAF2F3()
-    problem = MooRaF2F3()
-    problem_name = problem.name()
+    for service_file in services_files:
+        # folder creation for results storage
+        base_name = os.path.splitext(os.path.basename(service_file))[0]
+        result_dir = os.path.join("results_f2f3", base_name)
+        os.makedirs(result_dir, exist_ok=True)
 
+        print("Processing file: ", service_file)
 
-    reference_directions_factory = UniformReferenceDirectionFactory(n_dim=2, n_points=30)
-    
-    algorithm = MOCell(
-        problem=problem,
-        population_size=100,
-        neighborhood=C9(10, 10),
-        archive=CrowdingDistanceArchive(100),
-        mutation=IntegerPolynomialMutation(probability=0.6, distribution_index=30),
-        crossover=IntegerSBXCrossover(probability=1.0, distribution_index=20),
-        termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
-        population_evaluator=MultiprocessEvaluator(processes=8),
-    )
-
-    algorithm.run()
-    front = get_non_dominated_solutions(algorithm.result())    
-    # compute expects a numpy array
-    objsmocell = [s.objectives for s in front]
-
-    for idx,s in enumerate(front):
-        s.number_of_objectives = 2
-        _, _, _, _, data = problem.calculate_costs(s)
-        #plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f1_f2_{idx}.png")
-    
-    logplot_front(front, algorithm)
-    
-    algorithm = NSGAII(
-        problem=problem,
-        population_evaluator=MultiprocessEvaluator(processes=8),
-        population_size=150,
-        offspring_population_size=80,
-        mutation=IntegerPolynomialMutation(probability=0.6, distribution_index=30),
-        crossover=IntegerSBXCrossover(probability=0.6, distribution_index=15),
-        termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
-        dominance_comparator=DominanceWithConstraintsComparator()
-    )
-
-    algorithm.run()
-    front = get_non_dominated_solutions(algorithm.result())    
-    # compute expects a numpy array
-    objsnsgaii = [s.objectives for s in front]
-
-    for idx,s in enumerate(front):
-        s.number_of_objectives = 2
-        _, _, _, _ , data = problem.calculate_costs(s)
-        #plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f2_f3_{idx}.png")
-    
-    logplot_front(front, algorithm)
+        problem = MooRaF2F3()
+        problem_name = problem.name()
 
 
-    algorithm = NSGAIII(
-        problem=problem,
-        population_evaluator=MultiprocessEvaluator(processes=8),
-        reference_directions=reference_directions_factory,
-        population_size=150,
-        mutation=IntegerPolynomialMutation(probability=0.6, distribution_index=30),
-        crossover=IntegerSBXCrossover(probability=0.6, distribution_index=15),
-        termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
-        dominance_comparator=DominanceWithConstraintsComparator()
-    )
+        # for NSGA III
+        reference_directions_factory = UniformReferenceDirectionFactory(n_dim=2, n_points=30)
 
+        algorithms = []
 
-    algorithm.run()
-    front = get_non_dominated_solutions(algorithm.result())
+        algorithms.append(
+        SPEA2(
+            problem=problem,
+            population_size=50,
+            offspring_population_size=50,
+            mutation=IntegerPolynomialMutation(
+                probability=1.0 / problem.number_of_variables(),
+                distribution_index=20,
+            ),
+            crossover=IntegerSBXCrossover(probability=1.0, distribution_index=20),
+            termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+        )
+        )
 
-    # compute expects a numpy array
-    objsnsgaiii = [s.objectives for s in front]
+        algorithms.append(
+            RandomSearch(
+                problem=problem,
+                termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+            )
+        )
 
-    for idx, s in enumerate(front):
-        s.number_of_objectives = 2
-        _, _, _, _, data = problem.calculate_costs(s)
-        #plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f2_f3_{idx}.png")
+        algorithms.append(MOCell(
+                problem=problem,
+                population_size=100,
+                neighborhood=C9(10, 10),
+                archive=CrowdingDistanceArchive(100),
+                mutation=IntegerPolynomialMutation(probability=0.6, distribution_index=30),
+                crossover=IntegerSBXCrossover(probability=1.0, distribution_index=20),
+                termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+                population_evaluator=MultiprocessEvaluator(processes=8),
+            ))
+        
+        algorithms.append(NSGAII(
+            problem=problem,
+            population_evaluator=MultiprocessEvaluator(processes=8),
+            population_size=150,
+            offspring_population_size=80,
+            mutation=IntegerPolynomialMutation(probability=0.6, distribution_index=30),
+            crossover=IntegerSBXCrossover(probability=0.6, distribution_index=15),
+            termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+            dominance_comparator=DominanceWithConstraintsComparator()
+        ))
 
-    logplot_front(front, algorithm)
+        
+        algorithms.append(NSGAIII(
+            problem=problem,
+            population_evaluator=MultiprocessEvaluator(processes=8),
+            reference_directions=reference_directions_factory,
+            population_size=150,
+            mutation=IntegerPolynomialMutation(probability=0.6, distribution_index=30),
+            crossover=IntegerSBXCrossover(probability=0.6, distribution_index=15),
+            termination_criterion=StoppingByEvaluations(max_evaluations=50_000),
+            dominance_comparator=DominanceWithConstraintsComparator()
+        ))
 
-    
-    algorithm = MSPSO(
-        problem=problem,
-        swarm_evaluator=MultiprocessEvaluator(processes=8),
-        swarm_size=10,
-        termination_criterion=StoppingByEvaluations(max_evaluations=50_000)
-    )
+            
+        algorithms.append(MSPSO(
+            problem=problem,
+            swarm_evaluator=MultiprocessEvaluator(processes=8),
+            swarm_size=10,
+            termination_criterion=StoppingByEvaluations(max_evaluations=50_000)
+        ))
 
-    algorithm.run()
-    front = get_non_dominated_solutions(algorithm.result())
+        for algorithm in algorithms:
+            algorithm.run()
+            front = get_non_dominated_solutions(algorithm.result())    
+            logplot_front(front, algorithm)
 
-    # compute expects a numpy array
-    objsmspso = [s.objectives for s in front]
-
-    for idx, s in enumerate(front):
-        s.number_of_objectives = 2
-        _, _, _, _, data = problem.calculate_costs(s)
-        #plot_instance_usage(data, f"{problem.name()}_{algorithm.get_name()}_f2_f3_{idx}.png")
-    
-    logplot_front(front, algorithm)
-
-     # Put all objs into a numpy array
-    objs = np.array(objsmocell + objsnsgaii + objsnsgaiii + objsmspso)
-    reference_point = objs.max(axis=0) * 1.1
-    reference_point = reference_point.tolist()
-
-    hv = HyperVolume(reference_point)
-    hv_mocell = hv.compute(np.array(objsmocell))
-    hv_nsgaii = hv.compute(np.array(objsnsgaii))
-    hv_nsgaiii = hv.compute(np.array(objsnsgaiii))
-    hv_mspso = hv.compute(np.array(objsmspso))
-    print(f'Reference Point: {reference_point}')
-    print(f'MOCell Hypervolume: {hv_mocell}')
-    print(f'NSGAII Hypervolume: {hv_nsgaii}')
-    print(f'NSGAIII Hypervolume: {hv_nsgaiii}')
-    print(f'MSPSO Hypervolume: {hv_mspso}')
