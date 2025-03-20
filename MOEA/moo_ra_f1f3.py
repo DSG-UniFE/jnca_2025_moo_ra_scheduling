@@ -8,11 +8,11 @@ from jmetal.core.problem import IntegerProblem, FloatProblem
 from jmetal.core.solution import IntegerSolution, FloatSolution
 
 
-class MooRaF1F2(IntegerProblem):
+class MooRaF1F3(IntegerProblem):
     """Multi-Cluster problem"""
 
     def __init__(self):
-        super(MooRaF1F2, self).__init__()
+        super(MooRaF1F3, self).__init__()
         self.load_requests_data("./cnsm_data/Services.csv")
         self.load_instances_data(
             "./cnsm_data/pricing.csv", "./cnsm_data/AWS_EC2_Latency.csv"
@@ -34,7 +34,6 @@ class MooRaF1F2(IntegerProblem):
         # the variables will be a vector in which the first part indicate the timing of each request (length will be num_requests)
         # and the second part indicate the information about replicas
 
-        # Requests can be activated from 0 to 150
         # ILP goes from 0 to 100, so let's try to run a fair comparison
         T = 100
         self.lower_bound = [0 for _ in range(self.num_requests)] + [
@@ -264,7 +263,7 @@ class MooRaF1F2(IntegerProblem):
             print(f'Variables: {solution.variables[self.num_requests:]}')
 
         return total_cost, cpu_violations, ram_violations, gpu_violations, instance_usage
-
+    
     def calculate_max_latency(self, solution):
         max_latency_per_request = [0] * self.num_requests
         # exclude the timing
@@ -323,9 +322,10 @@ class MooRaF1F2(IntegerProblem):
         )
         # qos = self.calculate_qos(solution)
         latency_violations = self.latency_violations(solution)
+        qos = self.calculate_qos(solution)
 
         solution.objectives[0] = max_latency
-        solution.objectives[1] = tc
+        solution.objectives[1] = qos
 
         # Imposta i vincoli come violazioni (più violazioni => peggio è)
         solution.constraints[0] = self.check_number_of_replicas(solution)
@@ -356,4 +356,4 @@ class MooRaF1F2(IntegerProblem):
         return 5
 
     def name(self):
-        return "Moo_Ra_F1F2"
+        return "Moo_Ra_F1F3"
