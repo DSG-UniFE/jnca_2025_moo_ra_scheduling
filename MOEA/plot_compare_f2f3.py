@@ -45,7 +45,6 @@ def retrieve_objectives(filename, output_dir=None):
 
             # Convert the string representation of the lists to actual lists
             try:
-                latency = ast.literal_eval(row["Latency"])
                 cost = ast.literal_eval(row["Cost"])
                 unavailability = ast.literal_eval(row["Unavailability"])
             except Exception as e:
@@ -57,8 +56,8 @@ def retrieve_objectives(filename, output_dir=None):
 
             # Put the objectives in the file
             with open(output_filename, "w") as outfile:
-                for lat, c, unav in zip(latency, cost, unavailability):
-                    outfile.write(f"{lat} {c} {unav}\n")
+                for c, unav in zip(cost, unavailability):
+                    outfile.write(f"{c} {unav}\n")
 
 
 """
@@ -80,7 +79,6 @@ def plot_2d_front(front, alg_name, output_dir):
     # increase scatter size
     ax.scatter(front[:, 0], front[:, 1], alpha=0.8)
     # Set the camera view angle to 30, 60
-    ax.view_init(30, 60)
     # Set label for x, y, z
     ax.set_xlabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 12})
     ax.set_ylabel("Avg. Interruption Frequency (f3)", labelpad=10, fontdict={"fontsize": 12})
@@ -224,7 +222,7 @@ def main():
         f_sparsity = open(output_file_sparsity, "w")
         usecase = usecase.split("/")[1]
         print(f"Usecase: {usecase}")
-        objectives_files_meta = glob.glob(f"results/{usecase}/*.FUN.*")
+        objectives_files_meta = glob.glob(f"results_f2f3/{usecase}/*.FUN.*")
         objectives_files_ilp = glob.glob(
             f"../results/usecase/{usecase}/objectives_f2_f3/*.txt"
         )
@@ -251,7 +249,7 @@ def main():
             print(filename)
 
             solutions = read_solutions(filename)
-            sparsity = sparsity_calculation(solutions, 3)
+            sparsity = sparsity_calculation(solutions, 2)
             # print(f'Number of solutions: {len(solutions)}')
             # Getting the objective values
             objective_values = [s.objectives for s in solutions]
@@ -293,7 +291,7 @@ def main():
             gap = filename.split("_")[-1].split(".t")[0]
             solutions = read_solutions(filename)
             print(f"Filename: {filename} Gap: {gap}: Solutions: {len(solutions)}")
-            sparsity = sparsity_calculation(solutions, 3)
+            sparsity = sparsity_calculation(solutions, 2)
             f_sparsity.write(f"ILP Gap {gap} Sparsity: {sparsity}\n")
 
             if gap == "0.0":
