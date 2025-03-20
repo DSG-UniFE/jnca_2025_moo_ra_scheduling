@@ -1,0 +1,2 @@
+MIP_Gap,Min_Time_ms,Mean_Time_ms,Max_Time_ms,Median_Time_ms,Memory_Allocations,Memory_Usage_bytes,GC_Time_ms,GC_Percentage,Throughput_Ops_sec
+0.0,1.0152541952e6,1.0152541952e6,1.0152541952e6,1.0152541952e6,1257268464,57050566,0.0,0.0,0.0009849749990966598
