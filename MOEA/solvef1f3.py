@@ -47,7 +47,7 @@ def logplot_front(front, algorithm, output_dir, problem_name):
     print(f"Computing time: {algorithm.total_computing_time}")
 
     front_filename = os.path.join(
-        output_dir, f"{algorithm.get_name()}-f1-f2"
+        output_dir, f"{algorithm.get_name()}-f1-f3"
     )
 
     plot_front = Plot(title='Pareto front approximation', axis_labels=['f1', 'f2', 'f3'])
