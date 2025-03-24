@@ -114,6 +114,71 @@ def plot_3d_front(front, alg_name, output_dir):
     plt.close()
 
 
+def plot_combined_3d_front(front_dict, save_path):
+    """
+    Riceve un dizionario front_dict in cui le chiavi sono i nomi degli algoritmi e i valori
+    sono liste di punti (liste di obiettivi). Viene calcolato il minimo e massimo globale per
+    ciascun asse e impostato:
+       xlim = (0.90*min_x, 1.1*max_x)
+       ylim = (0.90*min_y, 1.1*max_y)
+       zlim = (0.90*min_z, 1.1*max_z)
+    Viene poi creato un plot 3D in cui ogni algoritmo viene rappresentato (con marker differenti)
+    e il plot viene salvato in save_path.
+    """
+    # Unisci tutti i punti per calcolare i limiti
+    all_points = []
+    for points in front_dict.values():
+        all_points.extend(points)
+    all_points = np.array(all_points)
+    if all_points.size == 0:
+        print("Nessun punto trovato nel dizionario, nessun plot verrà creato.")
+        return
+
+    # Calcola i limiti globali per ciascun obiettivo
+    mins = all_points.min(axis=0)
+    maxs = all_points.max(axis=0)
+    xlim = (0.90 * mins[0], 1.1 * maxs[0])
+    ylim = (0.90 * mins[1], 1.1 * maxs[1])
+    zlim = (0.90 * mins[2], 1.1 * maxs[2])
+
+    # Crea la figura 3D
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(projection="3d")
+
+    # Marker differenti per ogni algoritmo (opzionale)
+    markers = {
+        "MOCell": "o",
+        "NSGAII": "^",
+        "NSGAIII": "s",
+        "MSPSO": "d",
+        "SPEA2": "p",
+        "Random Search": "x",
+        "GA": "*",
+    }
+
+    # Plotta i punti per ciascun algoritmo
+    for alg, points in front_dict.items():
+        pts = np.array(points)
+        marker = markers.get(alg, "o")
+        ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], alpha=0.8, label=alg, marker=marker)
+
+    # Imposta le etichette degli assi
+    ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 12})
+    ax.set_ylabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 12})
+    ax.set_zlabel("Avg. Interruption Frequency (f3)", labelpad=8, fontdict={"fontsize": 12})
+    # Imposta i limiti degli assi
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    ax.set_zlim(zlim)
+
+    # Aggiungi la legenda
+    ax.legend()
+    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+    plt.savefig(save_path, bbox_inches="tight", pad_inches=0.4)
+    plt.close()
+    print(f"Plot combinato salvato in: {save_path}")
+
+
 """
 Using glob find all the files in the directory that contains
 VAR and a string given as argument
@@ -221,6 +286,7 @@ def main():
     for usecase in dir_usecases_meta:
         output_dir_sparsities = os.path.dirname("../sparsities/")
         usecase_name = usecase.split("/")[1]
+        usecase_name_path = os.path.basename(os.path.normpath(usecase))
         os.makedirs(output_dir_sparsities, exist_ok=True)
         output_dir_hv = os.path.dirname("../hypervolumes/")
         os.makedirs(output_dir_hv, exist_ok=True)
@@ -263,6 +329,7 @@ def main():
         objsrandomsearch = []
         objsga = []
 
+        combined_solutions = {}
         for filename in objectives_files_meta:
             # if '.png' in filename:
             #    continue
@@ -274,37 +341,48 @@ def main():
             # Getting the objective values
             objective_values = [s.objectives for s in solutions]
             # base_name = os.path.splitext(os.path.basename(filename))[0]
+           
 
             if "MOCell." in filename:
                 objsmocell = objective_values
                 algname = "MOCell"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
             elif "NSGAII." in filename:
                 objsnsgaii = objective_values
                 algname = "NSGAII"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
             elif "NSGAIII." in filename:
                 objsnsgaiii = objective_values
                 algname = "NSGAIII"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
             elif "MSPSO" in filename:
                 objsmspso = objective_values
                 algname = "MSPSO"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
             elif "SPEA2" in filename:
                 objsspea2 = objective_values
                 algname = "SPEA2"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
             elif "Random Search" in filename:
                 objsrandomsearch = objective_values
                 algname = "Random Search"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
 
             # algname = filename.split('.')[0]
             # xlabel = src_str[0:2].lower()
             # ylabel = src_str[2:4].lower()
             result_dir = os.path.dirname(filename)
             plot_3d_front(objective_values, algname, result_dir)  # , xlabel, ylabel)
+
+        
+        combined_plot_path = os.path.join(result_dir, "combined_plot.pdf")
+        plot_combined_3d_front(combined_solutions, combined_plot_path)
 
         # Add sparsity calculation related to ILP for each gap
         f_sparsity.write(f"\n\n********** ILP **********\n\n")
