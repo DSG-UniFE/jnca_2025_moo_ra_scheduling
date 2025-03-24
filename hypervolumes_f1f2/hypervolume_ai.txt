@@ -1,0 +1,14 @@
+MOCell Hypervolume: 8283.688990434337
+NSGAII Hypervolume: 8377.23305384267
+NSGAIII Hypervolume: 7789.95777976767
+MSPSO Hypervolume: 3626.8139516310034
+SPEA2 Hypervolume: 12704.763910569336
+Random Search Hypervolume: 0.0
+
+
+********** ILP **********
+
+ILP Gap 0.00 Hypervolume: 13825.742296372671
+ILP Gap 0.05 Hypervolume: 13825.742296372671
+ILP Gap 0.1 Hypervolume: 13825.742296372671
+ILP Gap 0.25 Hypervolume: 13825.742296372671

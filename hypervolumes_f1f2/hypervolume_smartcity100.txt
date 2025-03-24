@@ -1,0 +1,6 @@
+MOCell Hypervolume: 13566.116910779167
+NSGAII Hypervolume: 14248.0975767875
+NSGAIII Hypervolume: 14027.091500454168
+MSPSO Hypervolume: 6944.393097387501
+SPEA2 Hypervolume: 17298.920941379165
+Random Search Hypervolume: 0.0
