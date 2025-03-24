@@ -98,9 +98,9 @@ def plot_3d_front(front, alg_name, output_dir):
     # xlimit 70 175
     # ylimit 150 1200
     # zlimit 0 0.050
-    ax.set_xlim(70, 175)
-    ax.set_ylim(150, 1200)
-    ax.set_zlim(0, 0.050)
+    #ax.set_xlim(70, 175)
+    #ax.set_ylim(150, 1200)
+    #ax.set_zlim(0, 0.050)
     ax.set_xticklabels(ax.get_xticks(), fontsize=12)
     ax.set_yticklabels(ax.get_yticks(), fontsize=12)
     ax.set_zticklabels(ax.get_zticks(), fontsize=12)
@@ -303,7 +303,8 @@ def main():
             # algname = filename.split('.')[0]
             # xlabel = src_str[0:2].lower()
             # ylabel = src_str[2:4].lower()
-            plot_3d_front(objective_values, algname, output_dir)  # , xlabel, ylabel)
+            result_dir = os.path.dirname(filename)
+            plot_3d_front(objective_values, algname, result_dir)  # , xlabel, ylabel)
 
         # Add sparsity calculation related to ILP for each gap
         f_sparsity.write(f"\n\n********** ILP **********\n\n")
