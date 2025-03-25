@@ -78,11 +78,8 @@ def plot_3d_front(front, alg_name, output_dir):
     front = np.array(front)
     print(f"Alg name: {alg_name}")
     # Instantiate fig
-    # font = {'size': 10}
-    # plt.rc('font', **font)
     fig = plt.figure(figsize=(10, 6))
     ax = fig.add_subplot(projection="3d")
-    # ax.set_title(f'{alg_name}')
     # increase scatter size
     ax.scatter(front[:, 0], front[:, 1], front[:, 2], alpha=0.8)
     # Set the camera view angle to 30, 60
@@ -94,42 +91,20 @@ def plot_3d_front(front, alg_name, output_dir):
         "Avg. Interruption Frequency (f3)", labelpad=8, fontdict={"fontsize": 12}
     )
 
-    # reduce tick font size
-    # xlimit 70 175
-    # ylimit 150 1200
-    # zlimit 0 0.050
-    #ax.set_xlim(70, 175)
-    #ax.set_ylim(150, 1200)
-    #ax.set_zlim(0, 0.050)
     ax.set_xticklabels(ax.get_xticks(), fontsize=12)
     ax.set_yticklabels(ax.get_yticks(), fontsize=12)
     ax.set_zticklabels(ax.get_zticks(), fontsize=12)
-    # ax.tick_params(axis='both', which='major', labelsize=8)
     ax.view_init(elev=20, azim=45)
     plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.00)
-    # plt.subplots_adjust(left=0.10, right=0.90, top=0.90, bottom=0.10)
-    # plt.tight_layout()
     save_path = os.path.join(output_dir, f"Fig-3d-{alg_name}.pdf")
     plt.savefig(save_path, bbox_inches="tight", pad_inches=0.4)
     plt.close()
 
 
 def plot_combined_3d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
-    """
-    Riceve un dizionario front_dict in cui le chiavi sono i nomi degli algoritmi e i valori
-    sono liste di punti (liste di obiettivi). Viene calcolato il minimo e massimo globale per
-    ciascun asse e impostato:
-       xlim = (0.90*min_x, 1.1*max_x)
-       ylim = (0.90*min_y, 1.1*max_y)
-       zlim = (0.90*min_z, 1.1*max_z)
-    Viene poi creato un plot 3D in cui ogni algoritmo viene rappresentato (con marker differenti)
-    e il plot viene salvato in save_path.
-    """
-
-    # Crea la figura 3D
+ 
     fig = plt.figure(figsize=(10, 6))
     ax = fig.add_subplot(projection="3d")
-
 
     # Gather all points to compute limits
     all_points = []
@@ -143,7 +118,7 @@ def plot_combined_3d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
         print("No points foundend, skip plot creation.")
         return
 
-    # Calcola i limiti globali per ciascun obiettivo
+    # Compute axis limits based on all points
     mins = all_points.min(axis=0)
     maxs = all_points.max(axis=0)
     xlim = (0.90 * mins[0], 1.1 * maxs[0])
@@ -228,11 +203,11 @@ def plot_combined_3d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
     legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right", title="ILP", fontsize=10)
     ax.add_artist(legend_ilp)
 
-    # Imposta le etichette degli assi
+    # Set axis labels
     ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 12})
     ax.set_ylabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 12})
     ax.set_zlabel("Avg. Interruption Frequency (f3)", labelpad=8, fontdict={"fontsize": 12})
-    # Imposta i limiti degli assi
+    # Set axis limits
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
     ax.set_zlim(zlim)
@@ -359,9 +334,6 @@ def main():
 
     ##### Metaheuristics metrics computation #####
 
-    # src_str = 'MultiClusterGPU'
-    # files = find_files(src_str)
-
     for usecase in dir_usecases_meta:
         output_dir_sparsities = os.path.dirname("../sparsities/")
         usecase_name = usecase.split("/")[1]
@@ -390,8 +362,6 @@ def main():
         objectives_files_ilp = glob.glob(
             f"../results/usecase/{usecase}/objectives/*.txt"
         )
-        # print(objectives_files_meta)
-        # print(objectives_files_ilp)
 
         objsilpgap00 = []
         objsilpgap005 = []
@@ -409,18 +379,14 @@ def main():
 
         combined_solutions = {}
         for filename in objectives_files_meta:
-            # if '.png' in filename:
-            #    continue
+
             print(filename)
 
             solutions = read_solutions(filename)
             sparsity = sparsity_calculation(solutions, 3)
-            # print(f'Number of solutions: {len(solutions)}')
             # Getting the objective values
             objective_values = [s.objectives for s in solutions]
-            # base_name = os.path.splitext(os.path.basename(filename))[0]
            
-
             if "MOCell." in filename:
                 objsmocell = objective_values
                 algname = "MOCell"
@@ -452,9 +418,6 @@ def main():
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
                 combined_solutions.setdefault(algname, []).extend(objective_values)
 
-            # algname = filename.split('.')[0]
-            # xlabel = src_str[0:2].lower()
-            # ylabel = src_str[2:4].lower()
             result_dir = os.path.dirname(filename)
             plot_3d_front(objective_values, algname, result_dir)  # , xlabel, ylabel)
 
@@ -541,7 +504,6 @@ def main():
             ilp_results_present = False
 
         with open(output_file_hv, "w") as f:
-            # f.write(f"Reference Point: {reference_point}\n")
             f.write(f"MOCell Hypervolume: {hv_mocell}\n")
             f.write(f"NSGAII Hypervolume: {hv_nsgaii}\n")
             f.write(f"NSGAIII Hypervolume: {hv_nsgaiii}\n")
