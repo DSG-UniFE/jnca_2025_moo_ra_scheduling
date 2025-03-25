@@ -114,7 +114,7 @@ def plot_3d_front(front, alg_name, output_dir):
     plt.close()
 
 
-def plot_combined_3d_front(front_dict, save_path):
+def plot_combined_3d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
     """
     Riceve un dizionario front_dict in cui le chiavi sono i nomi degli algoritmi e i valori
     sono liste di punti (liste di obiettivi). Viene calcolato il minimo e massimo globale per
@@ -125,13 +125,22 @@ def plot_combined_3d_front(front_dict, save_path):
     Viene poi creato un plot 3D in cui ogni algoritmo viene rappresentato (con marker differenti)
     e il plot viene salvato in save_path.
     """
-    # Unisci tutti i punti per calcolare i limiti
+
+    # Crea la figura 3D
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(projection="3d")
+
+
+    # Gather all points to compute limits
     all_points = []
-    for points in front_dict.values():
+    for points in meta_solutions_dict.values():
         all_points.extend(points)
+    for points in ilp_solutions_dict.values():
+        all_points.extend(points)
+
     all_points = np.array(all_points)
     if all_points.size == 0:
-        print("Nessun punto trovato nel dizionario, nessun plot verrà creato.")
+        print("No points foundend, skip plot creation.")
         return
 
     # Calcola i limiti globali per ciascun obiettivo
@@ -141,26 +150,83 @@ def plot_combined_3d_front(front_dict, save_path):
     ylim = (0.90 * mins[1], 1.1 * maxs[1])
     zlim = (0.90 * mins[2], 1.1 * maxs[2])
 
-    # Crea la figura 3D
-    fig = plt.figure(figsize=(10, 6))
-    ax = fig.add_subplot(projection="3d")
+    # Lists for metaheuristics legends
+    handles_meta = []
+    labels_meta = []
 
-    # Marker differenti per ogni algoritmo (opzionale)
-    markers = {
+    # Markers and colors for each algorithm
+    markers_meta = {
         "MOCell": "o",
+        "MSPSO": "d",
         "NSGAII": "^",
         "NSGAIII": "s",
-        "MSPSO": "d",
         "SPEA2": "p",
         "Random Search": "x",
-        "GA": "*",
+        "GA": "*"
     }
+    colors_meta = [
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "tab:brown",
+        "tab:pink"
+    ]
 
-    # Plotta i punti per ciascun algoritmo
-    for alg, points in front_dict.items():
+    # Plot metaheuristics points
+    for idx, (alg, points) in enumerate(meta_solutions_dict.items()):
         pts = np.array(points)
-        marker = markers.get(alg, "o")
-        ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], alpha=0.8, label=alg, marker=marker)
+        if pts.size == 0:
+            continue
+        marker = markers_meta.get(alg, "o")
+        color = colors_meta[idx % len(colors_meta)]
+        sc = ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], alpha=0.8, label=alg, marker=marker, color=color)
+        handles_meta.append(sc)
+        labels_meta.append(alg)
+
+    # Create legend for metaheuristics
+    legend_meta = ax.legend(handles_meta, labels_meta, loc="upper left", title="Metaheuristics", fontsize=10)
+    ax.add_artist(legend_meta)
+
+    # Lists for ILP legends
+    handles_ilp = []
+    labels_ilp = []
+
+    # Markers and colors for each ILP gap
+    markers_ilp = {
+        "ILP Gap 0.0": "P",
+        "ILP Gap 0.05": "P",
+        "ILP Gap 0.1": "P",
+        "ILP Gap 0.25": "P",
+        "ILP Gap 0.5": "P",
+        "ILP Gap 0.75": "P"
+    }
+    colors_ilp = [
+        "tab:gray",
+        "tab:olive",
+        "tab:cyan",
+        "tab:purple",
+        "tab:pink",
+        "tab:brown"
+    ]
+
+    # Plot ILP points
+    idx_ilp = 0
+    for gap, points in ilp_solutions_dict.items():
+        pts = np.array(points)
+        if pts.size == 0:
+            continue
+        marker = markers_ilp.get(gap, "P")
+        color = colors_ilp[idx_ilp % len(colors_ilp)]
+        sc = ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], alpha=0.9, label=gap, marker=marker, s=140, edgecolor='black', color=color)
+        handles_ilp.append(sc)
+        labels_ilp.append(gap)
+        idx_ilp += 1
+
+    # Create legend for ILP
+    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right", title="ILP", fontsize=10)
+    ax.add_artist(legend_ilp)
 
     # Imposta le etichette degli assi
     ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 12})
@@ -171,12 +237,9 @@ def plot_combined_3d_front(front_dict, save_path):
     ax.set_ylim(ylim)
     ax.set_zlim(zlim)
 
-    # Aggiungi la legenda
-    ax.legend()
     plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
     plt.savefig(save_path, bbox_inches="tight", pad_inches=0.4)
     plt.close()
-    print(f"Plot combinato salvato in: {save_path}")
 
 
 """
@@ -264,6 +327,22 @@ def select_best_reference(ilp_solutions):
     best_index = np.argmin(distances)
     return ilp_solutions[best_index]
 
+def read_ilp_solutions(filename):
+    """
+    Read the objectives from the ILP solutions file.
+    """
+    solutions = []
+    with open(filename, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    objectives = [float(x) for x in line.split()]
+                    solutions.append(objectives)
+                except Exception as e:
+                    print(f"Error: {e}")
+    return solutions
+
 
 def main():
     # Glob for each direcory within results
@@ -286,7 +365,6 @@ def main():
     for usecase in dir_usecases_meta:
         output_dir_sparsities = os.path.dirname("../sparsities/")
         usecase_name = usecase.split("/")[1]
-        usecase_name_path = os.path.basename(os.path.normpath(usecase))
         os.makedirs(output_dir_sparsities, exist_ok=True)
         output_dir_hv = os.path.dirname("../hypervolumes/")
         os.makedirs(output_dir_hv, exist_ok=True)
@@ -380,9 +458,19 @@ def main():
             result_dir = os.path.dirname(filename)
             plot_3d_front(objective_values, algname, result_dir)  # , xlabel, ylabel)
 
+        # Build dict for ILP solutions
+        ilp_solutions_dict = {}
+        objectives_files_ilp = glob.glob(f"../results/usecase/{usecase}/objectives/*.txt")
+        for filename in objectives_files_ilp:
+            gap = filename.split("_")[-1].split(".t")[0]
+            key = f"ILP Gap {gap}"
+            solutions = read_ilp_solutions(filename)
+            if solutions:
+                ilp_solutions_dict.setdefault(key, []).extend(solutions)
+
         
         combined_plot_path = os.path.join(result_dir, "combined_plot.pdf")
-        plot_combined_3d_front(combined_solutions, combined_plot_path)
+        plot_combined_3d_front(combined_solutions, ilp_solutions_dict, combined_plot_path)
 
         # Add sparsity calculation related to ILP for each gap
         f_sparsity.write(f"\n\n********** ILP **********\n\n")
