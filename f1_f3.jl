@@ -194,7 +194,7 @@ function create_model(DC, I, D, T, l, CO, CR, CS, C, M, G, f, c, m, g, lat_thres
 end
 
 # Define the list of MIP gaps to test
-mip_gaps = [0.0, 0.05, 0.10, 0.25, 0.5, 0.75] # 0%, 5%, 10%, 25%
+mip_gaps = [0.0] # 0%, 5%, 10%, 25%
 
 # Initialize an empty DataFrame to store results
 results_df = DataFrame(
@@ -211,7 +211,7 @@ latency_file = "AWS/latency.csv"
 instance_file = "AWS/pricing.csv"
 
 # Change here according to the usecase you want to test
-usecase = "vr" # "smartcity", "iiot", "ai", "vr"
+usecase = "iiot50" # "smartcity", "iiot", "ai", "vr"
 
 # Paths
 service_file = "services/types/" * usecase * ".csv"
