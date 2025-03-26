@@ -218,7 +218,7 @@ latency_file = "AWS/latency.csv"
 instance_file = "AWS/pricing.csv"
 
 # Change here according to the usecase you want to test
-usecase = "ai100" # "smartcity", "iiot", "ai", "vr"
+usecase = "vr100" # "smartcity", "iiot", "ai", "vr"
 
 # Paths
 service_file = "services/types/" * usecase * ".csv"
