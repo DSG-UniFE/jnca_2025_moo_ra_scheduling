@@ -276,15 +276,19 @@ def dominance_based_gap(meta_heuristic_solutions, ilp_solutions):
 
         # Calculate the gap to the closest ILP solution
         closest_ilp_solution = ilp_solutions[min_distance_idx]
-        gap = (
-            np.abs(meta_solution - closest_ilp_solution)
-            / np.abs(closest_ilp_solution)
-            * 100
-        )
+        #print(f"Closest ILP solution: {closest_ilp_solution}, type: {type(closest_ilp_solution)}")
+        #print(f"Metaheuristic solution: {meta_solution}, type: {type(meta_solution)}")
+        # for all objective values get the best value
+        gap = []
+        for i in range(len(closest_ilp_solution)):
+            best_value = np.min([closest_ilp_solution[i], meta_solution[i]])
+            gap.append(float((meta_solution[i] - closest_ilp_solution[i]) / best_value * 100))
+        #print(f"Gap: {gap}")
         gaps.append(gap)
-
     try:
-        min_gap = np.min(gaps, axis=0)
+        min_gap_index = np.argmin(list(map(sum, gaps)), axis=0)
+        min_gap = gaps[min_gap_index]
+        #print(f"Min gap: {min_gap}")
     except ValueError as e:
         print(f"Error: {e}")
         min_gap = None
