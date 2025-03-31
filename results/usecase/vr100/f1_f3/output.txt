@@ -1,0 +1,66 @@
+Creation Time: 48.587449625 seconds
+Execution Time: 102.980881792 seconds
+* Solver : Gurobi
+
+* Status
+  Result count       : 4
+  Termination status : OPTIMAL
+  Message from the solver:
+  "Model was solved to optimality (subject to tolerances), and an optimal solution is available."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [2.13119e+01,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 7.23815e+01
+  Simplex iterations : 0
+  Barrier iterations : 0
+  Node count         : 1
+
+Objective values: [(3.4138999995897237, 0.0), (3.6650999992742728, 0.0), (21.06069999999996, 0.04999999999999996), (21.311899999999962, 0.0)]
+pareto_latency values: [3.4138999995897237]
+pareto_unavailability values: [0.0]
+* Solver : Gurobi
+
+* Status
+  Result count       : 4
+  Termination status : OPTIMAL
+  Message from the solver:
+  "Model was solved to optimality (subject to tolerances), and an optimal solution is available."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [2.13119e+01,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 7.23815e+01
+  Simplex iterations : 0
+  Barrier iterations : 0
+  Node count         : 1
+
+* Solver : Gurobi
+
+* Status
+  Result count       : 4
+  Termination status : OPTIMAL
+  Message from the solver:
+  "Model was solved to optimality (subject to tolerances), and an optimal solution is available."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [2.13119e+01,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 7.23815e+01
+  Simplex iterations : 0
+  Barrier iterations : 0
+  Node count         : 1
+
+✅ Solution saved to solution_summary_gap_0.0_usecase_vr100.csv
+✅ Results for MIP Gap 0.0 saved.
+✅ All results saved to results_usecase_vr100.csv
+

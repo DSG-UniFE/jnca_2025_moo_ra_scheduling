@@ -1,0 +1,138 @@
+🔍 Running with MIP Gap: 0.0
+Set(String15["t4g.small", "g4dn.4xlarge", "t4g.2xlarge", "g4dn.2xlarge", "t4g.large", "g4dn.xlarge"])Set parameter Username
+Set parameter LicenseID to value 2601667
+Academic license - for non-commercial use only - expires 2025-12-18
+Set parameter TimeLimit to value 1000
+Set parameter MIPGap to value 0
+Set parameter SolFiles to value "solution_"
+Set parameter MIPGap to value 0
+Set parameter TimeLimit to value 1000
+Set parameter SolFiles to value "solution_"
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (mac64[arm] - Darwin 24.3.0 24D81)
+
+CPU model: Apple M3
+Thread count: 8 physical cores, 8 logical processors, using up to 8 threads
+
+Non-default parameters:
+TimeLimit  1000
+MIPGap  0
+
+Optimize a model with 2505105 rows, 3895136 columns and 240580726 nonzeros
+Model fingerprint: 0x42223530
+Variable types: 100 continuous, 3895036 integer (3887200 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 2e+02]
+  Objective range  [8e-05, 1e-02]
+  Bounds range     [5e+00, 2e+01]
+  RHS range        [1e+00, 1e+00]
+
+---------------------------------------------------------------------------
+Multi-objectives: starting optimization with 2 objectives (1 combined)...
+---------------------------------------------------------------------------
+---------------------------------------------------------------------------
+
+Multi-objectives: optimize objective 1 (weighted) ...
+---------------------------------------------------------------------------
+
+Optimize a model with 2505105 rows, 3895136 columns and 240580726 nonzeros
+Model fingerprint: 0x71cde097
+Variable types: 100 continuous, 3895036 integer (3887200 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 2e+02]
+  Objective range  [8e-05, 1e-02]
+  Bounds range     [1e+00, 2e+01]
+  RHS range        [1e+00, 1e+00]
+Presolve removed 0 rows and 0 columns (presolve time = 7s)...
+Presolve removed 0 rows and 0 columns (presolve time = 10s)...
+Presolve removed 27000 rows and 7236 columns (presolve time = 21s)...
+Presolve removed 2004638 rows and 7236 columns (presolve time = 31s)...
+Presolve removed 2421228 rows and 3639085 columns
+Presolve time: 32.66s
+Presolved: 83877 rows, 256051 columns, 837123 nonzeros
+Variable types: 100 continuous, 255951 integer (255873 binary)
+Found heuristic solution: objective 3.3787000
+Performing another presolve...
+
+Explored 1 nodes (0 simplex iterations) in 56.39 seconds (50.02 work units)
+Thread count was 8 (of 8 available processors)
+
+Solution count 2: 3.3787 3.3787 
+
+Optimal solution found (tolerance 0.00e+00)
+Best objective 3.378700000000e+00, best bound 3.378700000000e+00, gap 0.0000%
+
+---------------------------------------------------------------------------
+Multi-objectives: solved in 61.40 seconds (50.02 work units), solution count 2
+
+
+User-callback calls 4073, time in user-callback 0.01 sec
+latency: 3.3786999999999985 ms
+unavailability: 0.0
+Load Time: 0.42009875 seconds
+Creation Time: 47.861423292 seconds
+Execution Time: 83.144213917 seconds
+* Solver : Gurobi
+
+* Status
+  Result count       : 2
+  Termination status : OPTIMAL
+  Message from the solver:
+  "Model was solved to optimality (subject to tolerances), and an optimal solution is available."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [3.37870e+00,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 6.14123e+01
+  Simplex iterations : 0
+  Barrier iterations : 0
+  Node count         : 1
+
+GKS: Possible loss of precision in routine SET_WINDOW
+Objective values: [(3.3786999999999985, 0.0), (3.378700000000003, 0.0)]
+pareto_latency values: [3.3786999999999985]
+pareto_unavailability values: [0.0]
+* Solver : Gurobi
+
+* Status
+  Result count       : 2
+  Termination status : OPTIMAL
+  Message from the solver:
+  "Model was solved to optimality (subject to tolerances), and an optimal solution is available."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [3.37870e+00,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 6.14123e+01
+  Simplex iterations : 0
+  Barrier iterations : 0
+  Node count         : 1
+
+* Solver : Gurobi
+
+* Status
+  Result count       : 2
+  Termination status : OPTIMAL
+  Message from the solver:
+  "Model was solved to optimality (subject to tolerances), and an optimal solution is available."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [3.37870e+00,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 6.14123e+01
+  Simplex iterations : 0
+  Barrier iterations : 0
+  Node count         : 1
+
+✅ Solution saved to solution_summary_gap_0.0_usecase_iiot100.csv
+✅ Results for MIP Gap 0.0 saved.
+✅ All results saved to results_usecase_iiot100.csv
+

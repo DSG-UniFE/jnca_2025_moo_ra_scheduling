@@ -1,0 +1,262 @@
+🔍 Running with MIP Gap: 0.0
+Set(String15["t4g.small", "g4dn.4xlarge", "t4g.2xlarge", "g4dn.2xlarge", "t4g.large", "g4dn.xlarge"])Set parameter Username
+Set parameter LicenseID to value 2601667
+Academic license - for non-commercial use only - expires 2025-12-18
+Set parameter TimeLimit to value 1000
+Set parameter MIPGap to value 0
+Set parameter SolFiles to value "solution_"
+Set parameter MIPGap to value 0
+Set parameter TimeLimit to value 1000
+Set parameter SolFiles to value "solution_"
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (mac64[arm] - Darwin 24.3.0 24D81)
+
+CPU model: Apple M3
+Thread count: 8 physical cores, 8 logical processors, using up to 8 threads
+
+Non-default parameters:
+TimeLimit  1000
+MIPGap  0
+
+Optimize a model with 2481302 rows, 3884336 columns and 231115132 nonzeros
+Model fingerprint: 0xe7b5cc33
+Variable types: 100 continuous, 3884236 integer (3876400 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 2e+02]
+  Objective range  [8e-05, 1e+02]
+  Bounds range     [2e+02, 5e+02]
+  RHS range        [1e+00, 1e+00]
+
+---------------------------------------------------------------------------
+Multi-objectives: starting optimization with 2 objectives (1 combined)...
+---------------------------------------------------------------------------
+---------------------------------------------------------------------------
+
+Multi-objectives: optimize objective 1 (weighted) ...
+---------------------------------------------------------------------------
+
+Optimize a model with 2481302 rows, 3884336 columns and 231115132 nonzeros
+Model fingerprint: 0x28418af0
+Variable types: 100 continuous, 3884236 integer (3876400 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 2e+02]
+  Objective range  [8e-05, 1e+02]
+  Bounds range     [1e+00, 5e+02]
+  RHS range        [1e+00, 1e+00]
+Presolve removed 0 rows and 0 columns (presolve time = 7s)...
+Presolve removed 0 rows and 0 columns (presolve time = 11s)...
+Presolve removed 0 rows and 100 columns (presolve time = 16s)...
+Presolve removed 0 rows and 100 columns (presolve time = 24s)...
+Presolve removed 1909698 rows and 100 columns (presolve time = 34s)...
+Presolve removed 1909698 rows and 100 columns (presolve time = 36s)...
+Presolve removed 1909698 rows and 100 columns (presolve time = 44s)...
+Presolve removed 1909698 rows and 2243424 columns (presolve time = 48s)...
+Presolve removed 1909698 rows and 2243424 columns (presolve time = 50s)...
+Presolve removed 1909698 rows and 2243424 columns (presolve time = 56s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 62s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 65s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 71s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 76s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 87s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 94s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 99s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 103s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 122s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 129s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 132s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 135s)...
+Presolve removed 1912567 rows and 2251992 columns (presolve time = 140s)...
+Presolve removed 1912575 rows and 2251992 columns (presolve time = 147s)...
+Presolve removed 1970376 rows and 2251992 columns (presolve time = 150s)...
+Presolve removed 1995171 rows and 2251992 columns (presolve time = 157s)...
+Presolve removed 1995171 rows and 2251992 columns
+Presolve time: 156.66s
+Presolved: 486131 rows, 1632344 columns, 125728748 nonzeros
+Variable types: 0 continuous, 1632344 integer (1625180 binary)
+Found heuristic solution: objective 7153.0000000
+Found heuristic solution: objective 4398.4000000
+Performing another presolve...
+Deterministic concurrent LP optimizer: primal simplex, dual simplex, and barrier
+Showing barrier log only...
+
+Root barrier log...
+
+Elapsed ordering time = 5s
+Elapsed ordering time = 10s
+Elapsed ordering time = 15s
+Elapsed ordering time = 20s
+Elapsed ordering time = 25s
+Elapsed ordering time = 30s
+Elapsed ordering time = 35s
+Elapsed ordering time = 40s
+Elapsed ordering time = 45s
+Elapsed ordering time = 50s
+Elapsed ordering time = 55s
+Elapsed ordering time = 60s
+Elapsed ordering time = 65s
+Elapsed ordering time = 70s
+Elapsed ordering time = 75s
+Elapsed ordering time = 84s
+Elapsed ordering time = 85s
+Elapsed ordering time = 90s
+Elapsed ordering time = 95s
+Elapsed ordering time = 100s
+Elapsed ordering time = 105s
+Elapsed ordering time = 110s
+Elapsed ordering time = 115s
+Elapsed ordering time = 120s
+Elapsed ordering time = 125s
+Elapsed ordering time = 130s
+Elapsed ordering time = 135s
+Elapsed ordering time = 140s
+Elapsed ordering time = 145s
+Elapsed ordering time = 150s
+Elapsed ordering time = 155s
+Elapsed ordering time = 160s
+Elapsed ordering time = 165s
+Elapsed ordering time = 170s
+Elapsed ordering time = 175s
+Elapsed ordering time = 180s
+Elapsed ordering time = 185s
+Elapsed ordering time = 190s
+Elapsed ordering time = 195s
+Elapsed ordering time = 200s
+Elapsed ordering time = 205s
+Elapsed ordering time = 210s
+Elapsed ordering time = 215s
+Elapsed ordering time = 220s
+Elapsed ordering time = 225s
+Elapsed ordering time = 230s
+Elapsed ordering time = 235s
+Elapsed ordering time = 240s
+Elapsed ordering time = 245s
+Elapsed ordering time = 250s
+Elapsed ordering time = 255s
+Elapsed ordering time = 260s
+Elapsed ordering time = 265s
+Elapsed ordering time = 270s
+Elapsed ordering time = 275s
+Elapsed ordering time = 280s
+Elapsed ordering time = 285s
+Elapsed ordering time = 290s
+Elapsed ordering time = 295s
+Elapsed ordering time = 300s
+Elapsed ordering time = 305s
+Elapsed ordering time = 310s
+Elapsed ordering time = 315s
+Elapsed ordering time = 320s
+Elapsed ordering time = 325s
+Elapsed ordering time = 330s
+Elapsed ordering time = 335s
+Elapsed ordering time = 340s
+Elapsed ordering time = 345s
+Elapsed ordering time = 350s
+Elapsed ordering time = 355s
+Elapsed ordering time = 360s
+Elapsed ordering time = 365s
+Ordering time: 367.35s
+
+Barrier statistics:
+ AA' NZ     : 3.708e+07
+ Factor NZ  : 7.132e+08 (roughly 6.0 GB of memory)
+ Factor Ops : 5.907e+12 (roughly 7 seconds per iteration)
+ Threads    : 6
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0   2.34694102e+07 -1.19411905e+09  9.03e+06 5.55e+00  6.15e+05   909s
+   1   2.23091310e+07 -1.09585716e+09  6.12e+06 5.41e+01  4.24e+05   961s
+
+Barrier performed 1 iterations in 1000.30 seconds (1619.02 work units)
+Time limit reached
+
+
+
+Root relaxation: time limit, 69687 iterations, 512.92 seconds (856.27 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0          -    0      4398.40000    0.00000   100%     - 1000s
+
+Explored 1 nodes (69687 simplex iterations) in 1004.16 seconds (1459.89 work units)
+Thread count was 8 (of 8 available processors)
+
+Solution count 2: 4398.4 7153 
+
+Time limit reached
+Best objective 4.398400000000e+03, best bound 0.000000000000e+00, gap 100.0000%
+
+---------------------------------------------------------------------------
+Multi-objectives: stopped in 1008.20 seconds (1459.89 work units), solution count 2
+Time Limit reached
+
+
+User-callback calls 274193, time in user-callback 0.59 sec
+cost: 4398.4
+unavailability: 0.0
+Load Time: 0.485036041 seconds
+Creation Time: 51.3212645 seconds
+Execution Time: 1035.430906916 seconds
+* Solver : Gurobi
+
+* Status
+  Result count       : 2
+  Termination status : TIME_LIMIT
+  Message from the solver:
+  "Optimization terminated because the time expended exceeded the value specified in the TimeLimit parameter."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [7.15300e+03,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 1.00821e+03
+  Simplex iterations : 69687
+  Barrier iterations : 0
+  Node count         : 1
+
+Objective values: [(4398.4, 0.0), (7153.0, 0.0)]
+pareto_cost values: [4398.4]
+pareto_unavailability values: [0.0]
+* Solver : Gurobi
+
+* Status
+  Result count       : 2
+  Termination status : TIME_LIMIT
+  Message from the solver:
+  "Optimization terminated because the time expended exceeded the value specified in the TimeLimit parameter."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [7.15300e+03,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 1.00821e+03
+  Simplex iterations : 69687
+  Barrier iterations : 0
+  Node count         : 1
+
+* Solver : Gurobi
+
+* Status
+  Result count       : 2
+  Termination status : TIME_LIMIT
+  Message from the solver:
+  "Optimization terminated because the time expended exceeded the value specified in the TimeLimit parameter."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [7.15300e+03,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 1.00821e+03
+  Simplex iterations : 69687
+  Barrier iterations : 0
+  Node count         : 1
+
+✅ Solution saved to solution_summary_gap_0.0_usecase_smartcity100.csv
+✅ Results for MIP Gap 0.0 saved.
+✅ All results saved to results_usecase_smartcity100.csv
