@@ -85,15 +85,15 @@ def plot_3d_front(front, alg_name, output_dir):
     # Set the camera view angle to 30, 60
     ax.view_init(30, 60)
     # Set label for x, y, z
-    ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 12})
-    ax.set_ylabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 12})
+    ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 15})
+    ax.set_ylabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 15})
     ax.set_zlabel(
-        "Avg. Interruption Frequency (f3)", labelpad=8, fontdict={"fontsize": 12}
+        "Avg. Interruption Frequency (f3)", labelpad=8, fontdict={"fontsize": 15}
     )
 
-    ax.set_xticklabels(ax.get_xticks(), fontsize=12)
-    ax.set_yticklabels(ax.get_yticks(), fontsize=12)
-    ax.set_zticklabels(ax.get_zticks(), fontsize=12)
+    ax.set_xticklabels(ax.get_xticks(), fontsize=15)
+    ax.set_yticklabels(ax.get_yticks(), fontsize=15)
+    ax.set_zticklabels(ax.get_zticks(), fontsize=15)
     ax.view_init(elev=20, azim=45)
     plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.00)
     save_path = os.path.join(output_dir, f"Fig-3d-{alg_name}.pdf")
@@ -161,7 +161,7 @@ def plot_combined_3d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
         labels_meta.append(alg)
 
     # Create legend for metaheuristics
-    legend_meta = ax.legend(handles_meta, labels_meta, loc="upper left", title="Metaheuristics", fontsize=10)
+    legend_meta = ax.legend(handles_meta, labels_meta, loc="upper left", title="Metaheuristics", title_fontproperties={'weight':'bold'}, fontsize=18, prop={'weight':'bold'})
     ax.add_artist(legend_meta)
 
     # Lists for ILP legends
@@ -200,13 +200,13 @@ def plot_combined_3d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
         idx_ilp += 1
 
     # Create legend for ILP
-    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right", title="ILP", fontsize=10)
+    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right", title="ILP", title_fontproperties={'weight':'bold'}, fontsize=18, prop={'weight':'bold'})
     ax.add_artist(legend_ilp)
 
     # Set axis labels
-    ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 12})
-    ax.set_ylabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 12})
-    ax.set_zlabel("Avg. Interruption Frequency (f3)", labelpad=8, fontdict={"fontsize": 12})
+    ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 15})
+    ax.set_ylabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 15})
+    ax.set_zlabel("Avg. Interruption Frequency (f3)", labelpad=8, fontdict={"fontsize": 15})
     # Set axis limits
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
@@ -276,19 +276,15 @@ def dominance_based_gap(meta_heuristic_solutions, ilp_solutions):
 
         # Calculate the gap to the closest ILP solution
         closest_ilp_solution = ilp_solutions[min_distance_idx]
-        #print(f"Closest ILP solution: {closest_ilp_solution}, type: {type(closest_ilp_solution)}")
-        #print(f"Metaheuristic solution: {meta_solution}, type: {type(meta_solution)}")
-        # for all objective values get the best value
-        gap = []
-        for i in range(len(closest_ilp_solution)):
-            best_value = np.min([closest_ilp_solution[i], meta_solution[i]])
-            gap.append(float((meta_solution[i] - closest_ilp_solution[i]) / best_value * 100))
-        #print(f"Gap: {gap}")
+        gap = (
+            np.abs(meta_solution - closest_ilp_solution)
+            / np.abs(closest_ilp_solution)
+            * 100
+        )
         gaps.append(gap)
+
     try:
-        min_gap_index = np.argmin(list(map(sum, gaps)), axis=0)
-        min_gap = gaps[min_gap_index]
-        #print(f"Min gap: {min_gap}")
+        min_gap = np.min(gaps, axis=0)
     except ValueError as e:
         print(f"Error: {e}")
         min_gap = None

@@ -56,8 +56,8 @@ def retrieve_objectives(filename, output_dir=None):
 
             # Put the objectives in the file
             with open(output_filename, "w") as outfile:
-                for c, unav in zip(cost, unavailability):
-                    outfile.write(f"{c} {unav}\n")
+                for lat, c in zip(cost, unavailability):
+                    outfile.write(f"{lat} {c}\n")
 
 
 """
@@ -99,6 +99,119 @@ def plot_2d_front(front, alg_name, output_dir):
 Using glob find all the files in the directory that contains
 VAR and a string given as argument
 """
+
+def plot_combined_2d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
+ 
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot()
+
+    # Gather all points to compute limits
+    all_points = []
+    for points in meta_solutions_dict.values():
+        all_points.extend(points)
+    for points in ilp_solutions_dict.values():
+        all_points.extend(points)
+
+    all_points = np.array(all_points)
+    if all_points.size == 0:
+        print("No points foundend, skip plot creation.")
+        return
+
+    # Compute axis limits based on all points
+    mins = all_points.min(axis=0)
+    maxs = all_points.max(axis=0)
+    xlim = (0.90 * mins[0], 1.1 * maxs[0])
+    ylim = (0.90 * mins[1], 1.1 * maxs[1])
+
+    # Lists for metaheuristics legends
+    handles_meta = []
+    labels_meta = []
+
+    # Markers and colors for each algorithm
+    markers_meta = {
+        "MOCell": "o",
+        "MSPSO": "d",
+        "NSGAII": "^",
+        "NSGAIII": "s",
+        "SPEA2": "p",
+        "Random Search": "x",
+        "GA": "*"
+    }
+    colors_meta = [
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "tab:brown",
+        "tab:pink"
+    ]
+
+    # Plot metaheuristics points
+    for idx, (alg, points) in enumerate(meta_solutions_dict.items()):
+        pts = np.array(points)
+        if pts.size == 0:
+            continue
+        marker = markers_meta.get(alg, "o")
+        color = colors_meta[idx % len(colors_meta)]
+        sc = ax.scatter(pts[:, 0], pts[:, 1], alpha=0.8, label=alg, marker=marker, color=color)
+        handles_meta.append(sc)
+        labels_meta.append(alg)
+
+    # Create legend for metaheuristics
+    legend_meta = ax.legend(handles_meta, labels_meta, loc="center right", bbox_to_anchor=(0.83, 0.85), title="Metaheuristics", title_fontproperties={'weight': 'bold', 'size': '12'}, fontsize=14, prop={'weight': 'bold'})
+    ax.add_artist(legend_meta)
+
+    # Lists for ILP legends
+    handles_ilp = []
+    labels_ilp = []
+
+    # Markers and colors for each ILP gap
+    markers_ilp = {
+        "ILP Gap 0.0": "P",
+        "ILP Gap 0.05": "P",
+        "ILP Gap 0.1": "P",
+        "ILP Gap 0.25": "P",
+        "ILP Gap 0.5": "P",
+        "ILP Gap 0.75": "P"
+    }
+    colors_ilp = [
+        "tab:gray",
+        "tab:olive",
+        "tab:cyan",
+        "tab:purple",
+        "tab:pink",
+        "tab:brown"
+    ]
+
+    # Plot ILP points
+    idx_ilp = 0
+    for gap, points in ilp_solutions_dict.items():
+        pts = np.array(points)
+        if pts.size == 0:
+            continue
+        marker = markers_ilp.get(gap, "P")
+        color = colors_ilp[idx_ilp % len(colors_ilp)]
+        sc = ax.scatter(pts[:, 0], pts[:, 1], alpha=0.9, label=gap, marker=marker, s=140, edgecolor='black', color=color)
+        handles_ilp.append(sc)
+        labels_ilp.append(gap)
+        idx_ilp += 1
+
+    # Create legend for ILP
+    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right", title="ILP", title_fontproperties={'weight': 'bold', 'size': '12'}, prop={'weight': 'bold'}, fontsize=14)
+    ax.add_artist(legend_ilp)
+
+    # Set axis labels
+    ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 18})
+    ax.set_ylabel("Avg. Interruption Frequency (f3)", labelpad=10, fontdict={"fontsize": 18})
+    # Set axis limits
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    
+    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+    plt.savefig(save_path, bbox_inches="tight", pad_inches=0.4)
+    plt.close()
+
 
 def find_files(pattern):
     files = glob.glob(f"*FUN*{pattern}")
@@ -183,6 +296,22 @@ def select_best_reference(ilp_solutions):
     best_index = np.argmin(distances)
     return ilp_solutions[best_index]
 
+def read_ilp_solutions(filename):
+    """
+    Read the objectives from the ILP solutions file.
+    """
+    solutions = []
+    with open(filename, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    objectives = [float(x) for x in line.split()]
+                    solutions.append(objectives)
+                except Exception as e:
+                    print(f"Error: {e}")
+    return solutions
+
 
 def main():
     # Glob for each direcory within results
@@ -247,6 +376,7 @@ def main():
         objsrandomsearch = []
         objsga = []
 
+        combined_solutions = {}
         for filename in objectives_files_meta:
             # if '.png' in filename:
             #    continue
@@ -263,31 +393,53 @@ def main():
                 objsmocell = objective_values
                 algname = "MOCell"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
             elif "NSGAII." in filename:
                 objsnsgaii = objective_values
                 algname = "NSGAII"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
             elif "NSGAIII." in filename:
                 objsnsgaiii = objective_values
                 algname = "NSGAIII"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
             elif "MSPSO" in filename:
                 objsmspso = objective_values
                 algname = "MSPSO"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
             elif "SPEA2" in filename:
                 objsspea2 = objective_values
                 algname = "SPEA2"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
             elif "Random Search" in filename:
                 objsrandomsearch = objective_values
                 algname = "Random Search"
                 f_sparsity.write(f"{algname} Sparsity: {sparsity}\n")
+                combined_solutions.setdefault(algname, []).extend(objective_values)
 
             # algname = filename.split('.')[0]
             # xlabel = src_str[0:2].lower()
             # ylabel = src_str[2:4].lower()
+            result_dir = os.path.dirname(filename)
             plot_2d_front(objective_values, algname, output_dir)  # , xlabel, ylabel)
+
+        # Build dict for ILP solutions
+        ilp_solutions_dict = {}
+        objectives_files_ilp = glob.glob(f"../results/usecase/{usecase}/objectives_f2_f3/*.txt")
+        for filename in objectives_files_ilp:
+            gap = filename.split("_")[-1].split(".t")[0]
+            key = f"ILP Gap {gap}"
+            solutions = read_ilp_solutions(filename)
+            if solutions:
+                ilp_solutions_dict.setdefault(key, []).extend(solutions)
+
+        
+        combined_plot_path = os.path.join(result_dir, "combined_plot.pdf")
+        plot_combined_2d_front(combined_solutions, ilp_solutions_dict, combined_plot_path)
+
 
         # Add sparsity calculation related to ILP for each gap
         f_sparsity.write(f"\n\n********** ILP **********\n\n")
@@ -311,6 +463,19 @@ def main():
             elif gap == "0.75":
                 objsilpgap075 = [s.objectives for s in solutions]
 
+        # Print the dimension of all objs
+        print(f"MOCell: {np.shape(objsmocell)} solutions")
+        print(f"NSGAII: {np.shape(objsnsgaii)} solutions")
+        print(f"NSGAIII: {np.shape(objsnsgaiii)} solutions")
+        print(f"MSPSO: {np.shape(objsmspso)} solutions")
+        print(f"SPEA2: {np.shape(objsspea2)} solutions")
+        print(f"Random Search: {np.shape(objsrandomsearch)} solutions")
+        print(f"ILP Gap 0.0: {np.shape(objsilpgap00)} solutions")
+        print(f"ILP Gap 0.05: {np.shape(objsilpgap005)} solutions")
+        print(f"ILP Gap 0.1: {np.shape(objsilpgap01)} solutions")
+        print(f"ILP Gap 0.25: {np.shape(objsilpgap025)} solutions")
+        print(f"ILP Gap 0.5: {np.shape(objsilpgap050)} solutions")
+        print(f"ILP Gap 0.75: {np.shape(objsilpgap075)} solutions")
         # Put all objs into a numpy array
         objs = np.array(
             objsilpgap00
