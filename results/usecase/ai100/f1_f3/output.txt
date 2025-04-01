@@ -1,0 +1,142 @@
+🔍 Running with MIP Gap: 0.0
+Set(String15["t4g.small", "g4dn.4xlarge", "t4g.2xlarge", "g4dn.2xlarge", "t4g.large", "g4dn.xlarge"])Set parameter Username
+Set parameter LicenseID to value 2601667
+Academic license - for non-commercial use only - expires 2025-12-18
+Set parameter TimeLimit to value 1000
+Set parameter MIPGap to value 0
+Set parameter SolFiles to value "solution_"
+Set parameter MIPGap to value 0
+Set parameter TimeLimit to value 1000
+Set parameter SolFiles to value "solution_"
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (mac64[arm] - Darwin 24.3.0 24D81)
+
+CPU model: Apple M3
+Thread count: 8 physical cores, 8 logical processors, using up to 8 threads
+
+Non-default parameters:
+TimeLimit  1000
+MIPGap  0
+
+Optimize a model with 2212820 rows, 3560336 columns and 212692960 nonzeros
+Model fingerprint: 0xe2e1dd6c
+Variable types: 100 continuous, 3560236 integer (3552400 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 2e+02]
+  Objective range  [8e-05, 1e-02]
+  Bounds range     [2e+01, 4e+01]
+  RHS range        [1e+00, 1e+00]
+
+---------------------------------------------------------------------------
+Multi-objectives: starting optimization with 2 objectives (1 combined)...
+---------------------------------------------------------------------------
+---------------------------------------------------------------------------
+
+Multi-objectives: optimize objective 1 (weighted) ...
+---------------------------------------------------------------------------
+
+Optimize a model with 2212820 rows, 3560336 columns and 212692960 nonzeros
+Model fingerprint: 0x41d7c935
+Variable types: 100 continuous, 3560236 integer (3552400 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 2e+02]
+  Objective range  [8e-05, 1e-02]
+  Bounds range     [1e+00, 4e+01]
+  RHS range        [1e+00, 1e+00]
+Presolve removed 0 rows and 0 columns (presolve time = 7s)...
+Presolve removed 0 rows and 0 columns (presolve time = 12s)...
+Presolve removed 27000 rows and 7236 columns (presolve time = 19s)...
+Presolve removed 27000 rows and 7236 columns (presolve time = 22s)...
+Presolve removed 1023624 rows and 7236 columns (presolve time = 33s)...
+Presolve removed 2125320 rows and 3293243 columns (presolve time = 35s)...
+Presolve removed 2125320 rows and 3293243 columns
+Presolve time: 35.21s
+Presolved: 87500 rows, 267093 columns, 873437 nonzeros
+Variable types: 100 continuous, 266993 integer (266893 binary)
+Found heuristic solution: objective 6.0543000
+Found heuristic solution: objective 5.8531000
+Performing another presolve...
+Found heuristic solution: objective 3.7935000
+Found heuristic solution: objective 3.5423000
+
+Explored 1 nodes (0 simplex iterations) in 60.25 seconds (42.59 work units)
+Thread count was 8 (of 8 available processors)
+
+Solution count 4: 3.5423 3.7935 5.8531 6.0543 
+
+Optimal solution found (tolerance 0.00e+00)
+Best objective 3.542300000000e+00, best bound 3.542300000000e+00, gap 0.0000%
+
+---------------------------------------------------------------------------
+Multi-objectives: solved in 63.44 seconds (42.59 work units), solution count 4
+
+
+User-callback calls 4263, time in user-callback 0.01 sec
+latency: 3.542300000000003 ms
+unavailability: 0.0
+Load Time: 0.473198125 seconds
+Creation Time: 43.831782084 seconds
+Execution Time: 85.191485125 seconds
+* Solver : Gurobi
+
+* Status
+  Result count       : 4
+  Termination status : OPTIMAL
+  Message from the solver:
+  "Model was solved to optimality (subject to tolerances), and an optimal solution is available."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [6.05430e+00,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 6.34462e+01
+  Simplex iterations : 0
+  Barrier iterations : 0
+  Node count         : 1
+
+Objective values: [(3.542300000000003, 0.0), (3.793500000000003, 0.0), (5.80309999999999, 0.050000000000000086), (6.054299999999991, 0.0)]
+pareto_latency values: [3.542300000000003]
+pareto_unavailability values: [0.0]
+* Solver : Gurobi
+
+* Status
+  Result count       : 4
+  Termination status : OPTIMAL
+  Message from the solver:
+  "Model was solved to optimality (subject to tolerances), and an optimal solution is available."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [6.05430e+00,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 6.34462e+01
+  Simplex iterations : 0
+  Barrier iterations : 0
+  Node count         : 1
+
+* Solver : Gurobi
+
+* Status
+  Result count       : 4
+  Termination status : OPTIMAL
+  Message from the solver:
+  "Model was solved to optimality (subject to tolerances), and an optimal solution is available."
+
+* Candidate solution (result #1)
+  Primal status      : FEASIBLE_POINT
+  Dual status        : NO_SOLUTION
+  Objective value    : [6.05430e+00,0.00000e+00]
+
+* Work counters
+  Solve time (sec)   : 6.34462e+01
+  Simplex iterations : 0
+  Barrier iterations : 0
+  Node count         : 1
+
+✅ Solution saved to solution_summary_gap_0.0_usecase_ai100.csv
+✅ Results for MIP Gap 0.0 saved.
+✅ All results saved to results_usecase_ai100.csv
+
