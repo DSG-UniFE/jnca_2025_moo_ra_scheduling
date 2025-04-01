@@ -494,8 +494,8 @@ def main():
         igd_spea2 = igd.compute(np.array(objsspea2))
         igs_randomsearch = igd.compute(np.array(objsrandomsearch))
         ilp_results_present = True
+        igd_moilp_gap00 = igd.compute(np.array(objsilpgap00))
         try:
-            igd_moilp_gap00 = igd.compute(np.array(objsilpgap00))
             igd_moilp_gap005 = igd.compute(np.array(objsilpgap005))
             igd_moilp_gap01 = igd.compute(np.array(objsilpgap01))
             igd_moilp_gap025 = igd.compute(np.array(objsilpgap025))
@@ -510,9 +510,9 @@ def main():
             f.write(f"MSPSO Hypervolume: {hv_mspso}\n")
             f.write(f"SPEA2 Hypervolume: {hv_spea2}\n")
             f.write(f"Random Search Hypervolume: {hv_randomsearch}\n")
+            f.write(f"\n\n********** ILP **********\n\n")
+            f.write(f"ILP Gap 0.00 Hypervolume: {hv_moilp_gap00}\n")
             if ilp_results_present:
-                f.write(f"\n\n********** ILP **********\n\n")
-                f.write(f"ILP Gap 0.00 Hypervolume: {hv_moilp_gap00}\n")
                 f.write(f"ILP Gap 0.05 Hypervolume: {hv_moilp_gap005}\n")
                 f.write(f"ILP Gap 0.1 Hypervolume: {hv_moilp_gap01}\n")
                 f.write(f"ILP Gap 0.25 Hypervolume: {hv_moilp_gap025}\n")
@@ -524,9 +524,9 @@ def main():
             f.write(f"MSPSO IGD: {igd_mspso}\n")
             f.write(f"SPEA2 IGD: {igd_spea2}\n")
             f.write(f"Random Search IGD: {igs_randomsearch}\n")
+            f.write(f"\n\n********** ILP **********\n\n")
+            f.write(f"ILP Gap 0.0 IGD: {igd_moilp_gap00}\n")
             if ilp_results_present:
-                f.write(f"\n\n********** ILP **********\n\n")
-                f.write(f"ILP Gap 0.0 IGD: {igd_moilp_gap00}\n")
                 f.write(f"ILP Gap 0.05 IGD: {igd_moilp_gap005}\n")
                 f.write(f"ILP Gap 0.1 IGD: {igd_moilp_gap01}\n")
                 f.write(f"ILP Gap 0.25 IGD: {igd_moilp_gap025}\n")
