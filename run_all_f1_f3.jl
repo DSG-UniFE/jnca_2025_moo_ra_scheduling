@@ -213,11 +213,12 @@ instance_file = "AWS/pricing.csv"
 # Run for all use cases
 usecases = ["smartcity", "iiot", "ai", "vr", "smartcity50", "iiot50", "ai50", "vr50", "smartcity100", "iiot100", "ai100", "vr100"]
 
-# Paths
-service_file = "services/types/" * usecase * ".csv"
-results_path = "results/usecase/" * usecase * "/f1_f3/"
 
 for usecase in usecases
+    
+    # Paths
+    service_file = "services/types/" * usecase * ".csv"
+    results_path = "results/usecase/" * usecase * "/f1_f3/"
     # Store all results in a DataFrame
     results = DataFrame()
 
