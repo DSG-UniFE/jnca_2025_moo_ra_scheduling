@@ -7,6 +7,8 @@ from jmetal.util.solution import (
     read_solutions,
 )
 
+from common import dominance_based_gap
+
 from matplotlib import pyplot as plt
 import seaborn as sns
 from collections import defaultdict
@@ -238,64 +240,6 @@ def sparsity_calculation(front, num_objective):
             sparsity += (objs[i][j] - objs[i + 1][j]) ** 2
     return sparsity / (len(objs) - 1)
 
-
-def dominance_based_gap(meta_heuristic_solutions, ilp_solutions):
-    """
-    Calculate the dominance-based approximation gap for each metaheuristic solution.
-
-    Parameters:
-        meta_heuristic_solutions (numpy array): Array of shape (f, m) where f is the number of metaheuristic solutions and m is the number of objectives.
-        ilp_solutions (numpy array): Array of shape (n, m) representing ILP solutions.
-        f can be greater than n.
-
-    Returns:
-        gaps (numpy array): Dominance-based approximation gaps.
-    """
-    if len(ilp_solutions) == 0:
-        return None
-    
-    # Initialize an array to store the minimum gap for each metaheuristic solution
-    gaps = []
-
-    # Iterate over each metaheuristic solution
-    for meta_solution in meta_heuristic_solutions:
-        # Calculate the distance from the metaheuristic solution to each ILP solution
-        # Here, we use a simple distance metric (e.g., Euclidean distance) to find the closest ILP solution
-        distances = cdist([meta_solution], ilp_solutions, metric="euclidean")
-        min_distance_idx = np.argmin(distances)
-
-        # Calculate the gap to the closest ILP solution
-        closest_ilp_solution = ilp_solutions[min_distance_idx]
-        #print(f"Closest ILP solution: {closest_ilp_solution}, type: {type(closest_ilp_solution)}")
-        #print(f"Metaheuristic solution: {meta_solution}, type: {type(meta_solution)}")
-        # for all objective values get the best value
-        gap = []
-        for i in range(len(closest_ilp_solution)):
-            best_value = np.min([closest_ilp_solution[i], meta_solution[i]])
-            gap.append(float((meta_solution[i] - closest_ilp_solution[i]) / best_value * 100))
-        #print(f"Gap: {gap}")
-        gaps.append(gap)
-    try:
-        min_gap_index = np.argmin(list(map(sum, gaps)), axis=0)
-        min_gap = gaps[min_gap_index]
-        #print(f"Min gap: {min_gap}")
-    except ValueError as e:
-        print(f"Error: {e}")
-        min_gap = None
-
-    return min_gap
-
-
-def select_best_reference(ilp_solutions):
-    """
-    Select the best reference in the ILP solutions based on the ideal point.
-    """
-    # Assuming minimization problems
-    ideal = np.min(ilp_solutions, axis=0)
-    distances = np.linalg.norm(ilp_solutions - ideal, axis=1)
-    best_index = np.argmin(distances)
-    return ilp_solutions[best_index]
-
 def read_ilp_solutions(filename):
     """
     Read the objectives from the ILP solutions file.
@@ -322,7 +266,7 @@ def main():
     for usecase in dir_usecases_ilp:
         output_dir = os.path.join(usecase, "objectives_f1_f2")
         os.makedirs(output_dir, exist_ok=True)
-        objectives_files_ilp = glob.glob(f"{usecase}f1_f2/results*.csv")
+        objectives_files_ilp = glob.glob(f"{usecase}f1_f2/results*_mac.csv")
         for objective_file in objectives_files_ilp:
             retrieve_objectives(objective_file, output_dir)
 
