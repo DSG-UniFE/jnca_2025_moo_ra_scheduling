@@ -1,37 +1,37 @@
 MOCell Dominance Gap 0.00: [59.25044961420195, inf]
-MOCell Dominance Gap 0.05: None
-MOCell Dominance Gap 0.1: None
-MOCell Dominance Gap 0.25: None
+MOCell Dominance Gap 0.05: [59.25044961420195, inf]
+MOCell Dominance Gap 0.1: [59.25044961420195, inf]
+MOCell Dominance Gap 0.25: [59.25044961420195, inf]
 MOCell Dominance Gap 0.5: None
 MOCell Dominance Gap 0.75: None
-NSGAII Dominance Gap 0.00: [17.396544886619544, nan]
-NSGAII Dominance Gap 0.05: None
-NSGAII Dominance Gap 0.1: None
-NSGAII Dominance Gap 0.25: None
+NSGAII Dominance Gap 0.00: [409.4902438552725, nan]
+NSGAII Dominance Gap 0.05: [409.4902438552725, nan]
+NSGAII Dominance Gap 0.1: [409.4902438552725, nan]
+NSGAII Dominance Gap 0.25: [409.4902438552725, nan]
 NSGAII Dominance Gap 0.5: None
 NSGAII Dominance Gap 0.75: None
-NSGAIII Dominance Gap 0.00: [47.41267528439872, nan]
-NSGAIII Dominance Gap 0.05: None
-NSGAIII Dominance Gap 0.1: None
-NSGAIII Dominance Gap 0.25: None
+NSGAIII Dominance Gap 0.00: [539.7574984045945, nan]
+NSGAIII Dominance Gap 0.05: [539.7574984045945, nan]
+NSGAIII Dominance Gap 0.1: [539.7574984045945, nan]
+NSGAIII Dominance Gap 0.25: [539.7574984045945, nan]
 NSGAIII Dominance Gap 0.5: None
 NSGAIII Dominance Gap 0.75: None
-MSPSO Dominance Gap 0.00: [144.79104005418426, nan]
-MSPSO Dominance Gap 0.05: None
-MSPSO Dominance Gap 0.1: None
-MSPSO Dominance Gap 0.25: None
+MSPSO Dominance Gap 0.00: [962.3706754849062, nan]
+MSPSO Dominance Gap 0.05: [962.3706754849062, nan]
+MSPSO Dominance Gap 0.1: [962.3706754849062, nan]
+MSPSO Dominance Gap 0.25: [962.3706754849062, nan]
 MSPSO Dominance Gap 0.5: None
 MSPSO Dominance Gap 0.75: None
 SPEA2 Dominance Gap 0.00: [54.22250584981917, nan]
-SPEA2 Dominance Gap 0.05: None
-SPEA2 Dominance Gap 0.1: None
-SPEA2 Dominance Gap 0.25: None
+SPEA2 Dominance Gap 0.05: [54.22250584981917, nan]
+SPEA2 Dominance Gap 0.1: [54.22250584981917, nan]
+SPEA2 Dominance Gap 0.25: [54.22250584981917, nan]
 SPEA2 Dominance Gap 0.5: None
 SPEA2 Dominance Gap 0.75: None
-Random Search Dominance Gap 0.00: [981.215661635945, inf]
-Random Search Dominance Gap 0.05: None
-Random Search Dominance Gap 0.1: None
-Random Search Dominance Gap 0.25: None
+Random Search Dominance Gap 0.00: [4592.376863723385, inf]
+Random Search Dominance Gap 0.05: [4592.376863723385, inf]
+Random Search Dominance Gap 0.1: [4592.376863723385, inf]
+Random Search Dominance Gap 0.25: [4592.376863723385, inf]
 Random Search Dominance Gap 0.5: None
 Random Search Dominance Gap 0.75: None
 GA Dominance Gap 0.00: None

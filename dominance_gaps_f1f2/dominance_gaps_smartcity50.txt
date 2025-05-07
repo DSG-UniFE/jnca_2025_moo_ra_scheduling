@@ -1,37 +1,37 @@
-MOCell Dominance Gap 0.00: [-965.0736015701675, -24.49508468930267]
-MOCell Dominance Gap 0.05: None
-MOCell Dominance Gap 0.1: None
-MOCell Dominance Gap 0.25: None
+MOCell Dominance Gap 0.00: [-824.241413150148, -29.7419908781732]
+MOCell Dominance Gap 0.05: [-824.241413150148, -29.7419908781732]
+MOCell Dominance Gap 0.1: [-824.241413150148, -29.7419908781732]
+MOCell Dominance Gap 0.25: [-824.241413150148, -33.92211886976512]
 MOCell Dominance Gap 0.5: None
 MOCell Dominance Gap 0.75: None
-NSGAII Dominance Gap 0.00: [-965.0736015701675, -20.969815809107477]
-NSGAII Dominance Gap 0.05: None
-NSGAII Dominance Gap 0.1: None
-NSGAII Dominance Gap 0.25: None
+NSGAII Dominance Gap 0.00: [-824.241413150148, -26.068147818113076]
+NSGAII Dominance Gap 0.05: [-824.241413150148, -26.068147818113076]
+NSGAII Dominance Gap 0.1: [-824.241413150148, -26.068147818113076]
+NSGAII Dominance Gap 0.25: [-824.241413150148, -30.129909087349905]
 NSGAII Dominance Gap 0.5: None
 NSGAII Dominance Gap 0.75: None
-NSGAIII Dominance Gap 0.00: [-939.2836113271821, 12.330426303561618]
-NSGAIII Dominance Gap 0.05: None
-NSGAIII Dominance Gap 0.1: None
-NSGAIII Dominance Gap 0.25: None
+NSGAIII Dominance Gap 0.00: [-824.241413150148, 8.968086791763108]
+NSGAIII Dominance Gap 0.05: [-824.241413150148, 8.968086791763108]
+NSGAIII Dominance Gap 0.1: [-824.241413150148, 8.968086791763108]
+NSGAIII Dominance Gap 0.25: [-824.241413150148, 5.566852151565797]
 NSGAIII Dominance Gap 0.5: None
 NSGAIII Dominance Gap 0.75: None
-MSPSO Dominance Gap 0.00: [-399.5627530105256, 67.55784073395871]
-MSPSO Dominance Gap 0.05: None
-MSPSO Dominance Gap 0.1: None
-MSPSO Dominance Gap 0.25: None
+MSPSO Dominance Gap 0.00: [-323.662618083671, 63.11347438502409]
+MSPSO Dominance Gap 0.05: [-323.662618083671, 63.11347438502409]
+MSPSO Dominance Gap 0.1: [-323.662618083671, 63.11347438502409]
+MSPSO Dominance Gap 0.25: [-323.662618083671, 58.02219293101937]
 MSPSO Dominance Gap 0.5: None
 MSPSO Dominance Gap 0.75: None
-SPEA2 Dominance Gap 0.00: [-998.2531893448465, -621.952050439278]
-SPEA2 Dominance Gap 0.05: None
-SPEA2 Dominance Gap 0.1: None
-SPEA2 Dominance Gap 0.25: None
+SPEA2 Dominance Gap 0.00: [-824.241413150148, -653.3278635587811]
+SPEA2 Dominance Gap 0.05: [-824.241413150148, -653.3278635587811]
+SPEA2 Dominance Gap 0.1: [-824.241413150148, -653.3278635587811]
+SPEA2 Dominance Gap 0.25: [-824.241413150148, -677.5991643766104]
 SPEA2 Dominance Gap 0.5: None
 SPEA2 Dominance Gap 0.75: None
-Random Search Dominance Gap 0.00: [251.41473174436163, 14.519593831149665]
-Random Search Dominance Gap 0.05: None
-Random Search Dominance Gap 0.1: None
-Random Search Dominance Gap 0.25: None
+Random Search Dominance Gap 0.00: [309.7676581701883, 38.77211563452121]
+Random Search Dominance Gap 0.05: [309.7676581701883, 38.77211563452121]
+Random Search Dominance Gap 0.1: [309.7676581701883, 38.77211563452121]
+Random Search Dominance Gap 0.25: [309.7676581701883, 34.44060408204639]
 Random Search Dominance Gap 0.5: None
 Random Search Dominance Gap 0.75: None
 GA Dominance Gap 0.00: None

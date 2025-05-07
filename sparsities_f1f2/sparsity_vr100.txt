@@ -8,4 +8,4 @@ NSGAII Sparsity: 935.4557597155559
 
 ********** ILP **********
 
-ILP Gap 0.0 Sparsity: 539.0170974344715
+ILP Gap 0.0 Sparsity: 0.8529606323345269

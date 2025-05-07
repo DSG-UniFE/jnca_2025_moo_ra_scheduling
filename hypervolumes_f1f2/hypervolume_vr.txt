@@ -9,6 +9,6 @@ Random Search Hypervolume: 0.0
 ********** ILP **********
 
 ILP Gap 0.00 Hypervolume: 20159.763417560007
-ILP Gap 0.05 Hypervolume: 20159.345407800007
-ILP Gap 0.1 Hypervolume: 20159.345407800007
-ILP Gap 0.25 Hypervolume: 20159.345407800007
+ILP Gap 0.05 Hypervolume: 20159.763417560007
+ILP Gap 0.1 Hypervolume: 20159.763417560007
+ILP Gap 0.25 Hypervolume: 20159.763417560007

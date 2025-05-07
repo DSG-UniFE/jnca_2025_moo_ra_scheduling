@@ -4,3 +4,11 @@ NSGAIII Hypervolume: 3.652955173518514
 MSPSO Hypervolume: 3.315966921203699
 SPEA2 Hypervolume: 3.6374010994444403
 Random Search Hypervolume: 0.9908491767592558
+
+
+********** ILP **********
+
+ILP Gap 0.00 Hypervolume: 3.679564955004408
+ILP Gap 0.05 Hypervolume: 3.679564955004408
+ILP Gap 0.1 Hypervolume: 3.679564955004408
+ILP Gap 0.25 Hypervolume: 3.679564955004408
