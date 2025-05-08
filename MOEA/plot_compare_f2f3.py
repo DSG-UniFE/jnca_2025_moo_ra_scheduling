@@ -382,7 +382,7 @@ def main():
                 ilp_solutions_dict.setdefault(key, []).extend(solutions)
 
         
-        combined_plot_path = os.path.join(result_dir, "combined_plot.pdf")
+        combined_plot_path = os.path.join(result_dir,  f"combined_plot_{usecase_name}.pdf")
         plot_combined_2d_front(combined_solutions, ilp_solutions_dict, combined_plot_path)
 
 
