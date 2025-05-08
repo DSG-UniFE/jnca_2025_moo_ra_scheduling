@@ -47,7 +47,7 @@ def dominance_based_gap(meta_heuristic_solutions, ilp_solutions):
         gap = []
         for i in range(len(best_ilp_solution)):
             best_value = np.min([best_ilp_solution[i], meta_solution[i]])
-            gap.append(float((meta_solution[i] - best_ilp_solution[i]) / best_value * 100))
+            gap.append(float((meta_solution[i] - best_ilp_solution[i]) / max(1e-6, best_value) * 100))
         gaps.append(gap)
     try:
         min_gap_index = np.argmin(list(map(sum, gaps)), axis=0)
