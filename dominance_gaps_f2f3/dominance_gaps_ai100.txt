@@ -16,13 +16,13 @@ NSGAIII Dominance Gap 0.1: None
 NSGAIII Dominance Gap 0.25: None
 NSGAIII Dominance Gap 0.5: None
 NSGAIII Dominance Gap 0.75: None
-MSPSO Dominance Gap 0.00: [-80.41364278864435, -inf]
+MSPSO Dominance Gap 0.00: [-80.41364278864435, -6200000.00000001]
 MSPSO Dominance Gap 0.05: None
 MSPSO Dominance Gap 0.1: None
 MSPSO Dominance Gap 0.25: None
 MSPSO Dominance Gap 0.5: None
 MSPSO Dominance Gap 0.75: None
-SPEA2 Dominance Gap 0.00: [-708.5198102424863, -inf]
+SPEA2 Dominance Gap 0.00: [-708.5198102424863, -6200000.00000001]
 SPEA2 Dominance Gap 0.05: None
 SPEA2 Dominance Gap 0.1: None
 SPEA2 Dominance Gap 0.25: None
