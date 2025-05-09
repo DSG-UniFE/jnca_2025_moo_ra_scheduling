@@ -204,8 +204,8 @@ def plot_combined_2d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
     ax.add_artist(legend_ilp)
 
     # Set axis labels
-    ax.set_xlabel("Avg. Max. Latency (f1)", labelpad=10, fontdict={"fontsize": 18})
-    ax.set_ylabel("Deployment Costs (f2)", labelpad=10, fontdict={"fontsize": 18})
+    ax.set_xlabel("Avg. Max. Latency (Obj 1)", labelpad=10, fontdict={"fontsize": 18})
+    ax.set_ylabel("Deployment Costs (Obj 2)", labelpad=10, fontdict={"fontsize": 18})
     # Set axis limits
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
