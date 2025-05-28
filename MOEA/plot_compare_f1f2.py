@@ -104,7 +104,10 @@ VAR and a string given as argument
 
 def plot_combined_2d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
  
-    fig = plt.figure(figsize=(10, 6))
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+
+    fig = plt.figure(figsize=(7, 4))
     ax = fig.add_subplot()
 
     # Gather all points to compute limits
@@ -161,7 +164,9 @@ def plot_combined_2d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
         labels_meta.append(alg)
 
     # Create legend for metaheuristics
-    legend_meta = ax.legend(handles_meta, labels_meta, loc="center right", bbox_to_anchor=(0.83, 0.87), fontsize=22, prop={'weight': 'bold'})
+    legend_meta = ax.legend(handles_meta, labels_meta, 
+                             loc="center right", bbox_to_anchor=(0.75, 0.87),
+                             fontsize=12, prop={'weight': 'bold'})
     ax.add_artist(legend_meta)
 
     # Lists for ILP legends
@@ -200,18 +205,20 @@ def plot_combined_2d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
         idx_ilp += 1
 
     # Create legend for ILP
-    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right", prop={'weight': 'bold'}, fontsize=22)
+    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="center right",
+                            bbox_to_anchor=(1.03, 0.87),
+                            prop={'weight': 'bold'}, fontsize=12)
     ax.add_artist(legend_ilp)
-
     # Set axis labels
-    ax.set_xlabel("Avg. Max. Latency (Obj 1)", labelpad=10, fontdict={"fontsize": 18})
-    ax.set_ylabel("Deployment Costs (Obj 2)", labelpad=10, fontdict={"fontsize": 18})
+    ax.set_xlabel("Avg. Max. Latency (Obj 1)", labelpad=10, fontdict={"fontsize": 14})
+    ax.set_ylabel("Deployment Costs (Obj 2)", labelpad=10, fontdict={"fontsize": 14})
+    ax.tick_params(axis='both', labelsize=12)  # You can adjust the size (e.g., 14, 16)
     # Set axis limits
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
     
-    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-    plt.savefig(save_path, bbox_inches="tight", pad_inches=0.4)
+    #plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+    plt.savefig(save_path, bbox_inches="tight", dpi=250, pad_inches=0.4)
     plt.close()
 
 
@@ -368,7 +375,7 @@ def main():
             # xlabel = src_str[0:2].lower()
             # ylabel = src_str[2:4].lower()
             result_dir = os.path.dirname(filename)
-            plot_2d_front(objective_values, algname, output_dir)  # , xlabel, ylabel)
+            #plot_2d_front(objective_values, algname, output_dir)  # , xlabel, ylabel)
 
         # Build dict for ILP solutions
         ilp_solutions_dict = {}
