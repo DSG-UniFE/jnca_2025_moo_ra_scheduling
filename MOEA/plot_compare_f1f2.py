@@ -161,7 +161,7 @@ def plot_combined_2d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
         labels_meta.append(alg)
 
     # Create legend for metaheuristics
-    legend_meta = ax.legend(handles_meta, labels_meta, loc="center right", bbox_to_anchor=(0.83, 0.85), title="Metaheuristics", title_fontproperties={'weight': 'bold', 'size': '12'}, fontsize=14, prop={'weight': 'bold'})
+    legend_meta = ax.legend(handles_meta, labels_meta, loc="center right", bbox_to_anchor=(0.83, 0.87), fontsize=22, prop={'weight': 'bold'})
     ax.add_artist(legend_meta)
 
     # Lists for ILP legends
@@ -200,7 +200,7 @@ def plot_combined_2d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
         idx_ilp += 1
 
     # Create legend for ILP
-    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right", title="ILP", title_fontproperties={'weight': 'bold', 'size': '12'}, prop={'weight': 'bold'}, fontsize=14)
+    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right", prop={'weight': 'bold'}, fontsize=22)
     ax.add_artist(legend_ilp)
 
     # Set axis labels

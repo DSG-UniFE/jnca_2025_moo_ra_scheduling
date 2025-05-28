@@ -163,7 +163,7 @@ def plot_combined_3d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
         labels_meta.append(alg)
 
     # Create legend for metaheuristics
-    legend_meta = ax.legend(handles_meta, labels_meta, loc="upper left", title="Metaheuristics", title_fontproperties={'weight':'bold'}, fontsize=18, prop={'weight':'bold'})
+    legend_meta = ax.legend(handles_meta, labels_meta, loc="upper left", fontsize=18, prop={'weight':'bold'})
     ax.add_artist(legend_meta)
 
     # Lists for ILP legends
@@ -202,7 +202,7 @@ def plot_combined_3d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
         idx_ilp += 1
 
     # Create legend for ILP
-    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right", title="ILP", title_fontproperties={'weight':'bold'}, fontsize=18, prop={'weight':'bold'})
+    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right", fontsize=18, prop={'weight':'bold'})
     ax.add_artist(legend_ilp)
 
     # Set axis labels
