@@ -165,7 +165,7 @@ def plot_combined_2d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
     # Create legend for metaheuristics
     # Create legend for metaheuristics
     legend_meta = ax.legend(handles_meta, labels_meta, 
-                             loc="center right", bbox_to_anchor=(0.75, 0.87),
+                             loc="upper left",
                              fontsize=12, prop={'weight': 'bold'})    
     ax.add_artist(legend_meta)
 
@@ -206,8 +206,7 @@ def plot_combined_2d_front(meta_solutions_dict, ilp_solutions_dict, save_path):
 
     # Create legend for ILP
     # Create legend for ILP
-    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="center right",
-                            bbox_to_anchor=(1.03, 0.87),
+    legend_ilp = ax.legend(handles_ilp, labels_ilp, loc="upper right",
                             prop={'weight': 'bold'}, fontsize=12)
     ax.add_artist(legend_ilp)
 
@@ -390,7 +389,7 @@ def main():
                 ilp_solutions_dict.setdefault(key, []).extend(solutions)
 
         
-        combined_plot_path = os.path.join(result_dir,  f"combined_plot_{usecase_name}.pdf")
+        combined_plot_path = os.path.join(result_dir,  f"combined_plot_{usecase_name}_f1f3.pdf")
         plot_combined_2d_front(combined_solutions, ilp_solutions_dict, combined_plot_path)
 
 
