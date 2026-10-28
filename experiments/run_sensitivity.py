@@ -10,8 +10,9 @@ path redirected. Each substitution is checked to match exactly once.
         --gaps 0.0 0.05 0.1 0.25 0.5 0.75 --time-limits 100 300 1000 --dry-run
     python experiments/run_sensitivity.py            # defaults above, all use cases
 
-Needs Julia with JuMP, Gurobi (licensed), MultiObjectiveAlgorithms, DataFrames, CSV,
-Plots and BenchmarkTools, as for the original script.
+Needs Julia with JuMP, Gurobi (licensed), MultiObjectiveAlgorithms, DataFrames, CSV and
+BenchmarkTools. The figures of the original script are skipped (a stub replaces Plots, which
+does not load on Julia 1.13 on macOS); pass --plots to keep them.
 """
 import argparse
 import os
@@ -25,7 +26,16 @@ JL = os.path.join(ROOT, "MO-ILP_Gpu_added.jl")
 OUT = os.path.join(ROOT, "experiments", "results", "sensitivity")
 
 
-def patch(src, usecase, gap, tlimit, results_dir):
+PLOTS_STUB = '''module Plots  # stand-in for the plotting package: the sweep only needs the numbers
+export scatter3d, scatter3d!, savefig
+scatter3d(args...; kwargs...) = nothing
+scatter3d!(args...; kwargs...) = nothing
+savefig(args...; kwargs...) = nothing
+end
+using .Plots'''
+
+
+def patch(src, usecase, gap, tlimit, results_dir, plots=False):
     def sub(pattern, repl, text):
         new, n = re.subn(pattern, lambda m: repl, text, flags=re.M)
         if n != 1:
@@ -33,6 +43,8 @@ def patch(src, usecase, gap, tlimit, results_dir):
         return new
 
     s = src
+    if not plots:
+        s = sub(r"^using Plots$", PLOTS_STUB, s)
     s = sub(r"^mip_gaps = \[0\.0\].*$", f"mip_gaps = [{gap}]", s)
     s = sub(r"TimeLimitSec\(\), 1000\)", f"TimeLimitSec(), {tlimit})", s)
     s = sub(r'^usecase = "[a-z0-9]+".*$', f'usecase = "{usecase}"', s)
@@ -50,6 +62,7 @@ def main():
     p.add_argument("--gaps", type=float, nargs="+", default=[0.0, 0.05, 0.1, 0.25, 0.5, 0.75])
     p.add_argument("--time-limits", type=int, nargs="+", default=[100, 300, 1000])
     p.add_argument("--julia", default="julia")
+    p.add_argument("--plots", action="store_true", help="keep the figures of the original script (needs a working Plots)")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
 
@@ -65,12 +78,12 @@ def main():
                         continue
                     print("run:", case, "time limit", tl, "gap", gap)
                     if a.dry_run:
-                        patch(src, case, gap, tl, d)  # still validates the substitutions
+                        patch(src, case, gap, tl, d, a.plots)  # still validates the substitutions
                         continue
                     os.makedirs(d, exist_ok=True)
                     script = os.path.join(d, "run.jl")
                     with open(script, "w") as f:
-                        f.write(patch(src, case, gap, tl, d))
+                        f.write(patch(src, case, gap, tl, d, a.plots))
                     with open(os.path.join(d, "output.txt"), "w") as log:
                         subprocess.run([a.julia, script], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
 

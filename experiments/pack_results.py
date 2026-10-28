@@ -13,6 +13,7 @@ and experiments/results/MANIFEST.txt with the date, the code commit and the run 
 A .sha256 file is written next to the archive.
 
     python experiments/pack_results.py --out ~/Desktop            # slim: tables, figures, DG
+    python experiments/pack_results.py --out ~/Desktop --exp ablation   # only one experiment
     python experiments/pack_results.py --out ~/Desktop --full     # adds the variable vectors (jitter analysis)
 """
 import argparse
@@ -83,6 +84,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--out", default=os.path.dirname(ROOT), help="folder for the archive (outside the repository)")
     p.add_argument("--full", action="store_true", help="keep the variable vectors of every solution")
+    p.add_argument("--exp", nargs="+", choices=["ablation", "paper", "large"], default=None,
+                   help="pack only these experiments (default: all)")
     a = p.parse_args()
     out = os.path.abspath(os.path.expanduser(a.out))
     if out.startswith(ROOT + os.sep):
@@ -93,6 +96,8 @@ def main():
     runs = {}
     for v in versions:
         files = sorted(glob.glob(os.path.join(RESULTS, v, "*", "*", "*", "seed*", "*.json")))
+        if a.exp:
+            files = [f for f in files if os.path.relpath(f, RESULTS).split(os.sep)[1] in a.exp]
         runs[v] = []
         for f in files:
             with open(f) as fh:
@@ -101,7 +106,8 @@ def main():
         raise SystemExit("no runs found")
 
     stamp = datetime.date.today().strftime("%Y%m%d")
-    name = f"jnca_results_{'full' if a.full else 'slim'}_{stamp}.tar.gz"
+    tag = "_" + "-".join(a.exp) if a.exp else ""
+    name = f"jnca_results{tag}_{'full' if a.full else 'slim'}_{stamp}.tar.gz"
     path = os.path.join(out, name)
     now = datetime.datetime.now().timestamp()
     with tarfile.open(path, "w:gz") as tar:
@@ -117,8 +123,13 @@ def main():
                     add_bytes(tar, arc, json.dumps(rec).encode(), os.path.getmtime(f))
             for sub in ("reports", "logs"):
                 d = os.path.join(RESULTS, v, sub)
-                if os.path.isdir(d):
-                    tar.add(d, arcname=os.path.join("experiments", "results", v, sub))
+                if not os.path.isdir(d):
+                    continue
+                for item in sorted(os.listdir(d)):
+                    # reports are named <experiment>_*.csv and logs <stamp>_<experiment>_w<i>.log
+                    if a.exp and not any(item.startswith(e + "_") or f"_{e}_" in item for e in a.exp):
+                        continue
+                    tar.add(os.path.join(d, item), arcname=os.path.join("experiments", "results", v, sub, item))
     digest = hashlib.sha256(open(path, "rb").read()).hexdigest()
     with open(path + ".sha256", "w") as fh:
         fh.write(f"{digest}  {name}\n")
