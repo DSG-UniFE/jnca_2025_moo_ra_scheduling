@@ -1,4 +1,4 @@
-jmetalpy
+jmetalpy==1.7.0
 dask
 seaborn
 pandas
