@@ -35,6 +35,13 @@ command resumes where it stopped. Runs are ordered seed first, so stopping early
 `experiments/results/<MOEA_NAME>/logs/`); `--time-budget MIN` stops starting new runs after MIN
 minutes and lets the running ones finish. `pkill -f run_moea.py` stops everything.
 
+## Large-scale evaluation (prepared, not started)
+
+The request files are in `services/types_large/` (250, 500 and 1000 requests, four use cases).
+`sh experiments/launch_large.sh` starts the runs for `MOEA_2026` and `MOEA` (options and the
+`DRY=1` count-only mode are described at the top of the script). With 3 seeds that is 216 runs per
+version, about 28 CPU hours for `MOEA` and 44 for `MOEA_2026`.
+
 ## Code versions
 
 The runner uses `MOEA_2026/` (fixed decoder, see `MOEA_2026/README.md`) by default. `MOEA_DIR=MOEA`

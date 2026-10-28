@@ -23,6 +23,7 @@ import argparse
 import glob
 import json
 import os
+import shutil
 import sys
 import time
 from multiprocessing import freeze_support
@@ -30,6 +31,7 @@ from multiprocessing import freeze_support
 import numpy as np
 
 import algos
+from ilp_front import ilp_front
 from algos import ALGORITHMS, ROOT, MOEA_DIR, MOEA_NAME
 
 USECASES = ["ai", "iiot", "smartcity", "vr"]
@@ -121,6 +123,20 @@ def is_done(task, evals):
         return False
 
 
+def reuse_from_ablation(task, evals):
+    """The 3-objective INFIT runs of the paper rerun at 50 and 100 requests are the same runs as the
+    `infit` variant of the ablation, so copy those results instead of running them again."""
+    if not (task["exp"] == "paper" and task["variant"] == "infit" and task["oset"] == "f1f2f3"
+            and task["size"] in (50, 100)):
+        return False
+    src = os.path.join(OUT, "ablation", "infit", f"{task['uc']}{task['size']}", f"seed{task['seed']}", f"{task['alg']}.json")
+    if not is_done(dict(out=src), evals):
+        return False
+    os.makedirs(os.path.dirname(task["out"]), exist_ok=True)
+    shutil.copy2(src, task["out"])
+    return True
+
+
 def pid_alive(pid):
     try:
         os.kill(pid, 0)
@@ -156,14 +172,20 @@ def claim(task, stale_min):
 
 
 def run_grid(exp, variants, sizes, usecases, algs, seeds, evals, processes, dry,
-             objective_sets=("f1f2f3",), time_budget=None, stale_min=180):
+             objective_sets=("f1f2f3",), time_budget=None, stale_min=180, copy_only=False):
     from moo_ra_4 import MooRa4
     tasks = build_tasks(exp, variants, sizes, usecases, algs, seeds, objective_sets)
     start = time.time()
     done = ran = 0
+    copied = 0
     for n, t in enumerate(tasks, 1):
         if is_done(t, evals):
             done += 1
+            continue
+        if reuse_from_ablation(t, evals):
+            copied += 1
+            continue
+        if copy_only:
             continue
         if dry:
             print("would run:", exp, t["variant"], t["wl"], t["alg"], "seed", t["seed"])
@@ -184,7 +206,7 @@ def run_grid(exp, variants, sizes, usecases, algs, seeds, evals, processes, dry,
         finally:
             if os.path.exists(lock):
                 os.remove(lock)
-    print(f"configurations: {len(tasks)}  already done: {done}  run by this worker: {ran}")
+    print(f"configurations: {len(tasks)}  already done: {done}  copied from the ablation: {copied}  run by this worker: {ran}")
 
 
 def status(exp, variants, sizes, usecases, algs, seeds, evals, objective_sets):
@@ -291,9 +313,9 @@ def report(exp, feasible_only, ilp_dir):
         uc = base.rstrip("0123456789")
         size = base[len(uc):]
         three_obj = wl.endswith("_f1f2f3") or "_" not in wl
-        ilp_file = os.path.join(ilp_dir, f"{uc}{size}", "objectives", "objectives_gap_0.0.txt") if ilp_dir and three_obj else None
-        if ilp_file and os.path.exists(ilp_file):
-            ilp = np.loadtxt(ilp_file, ndmin=2).tolist()  # common.dominance_based_gap compares lists
+        pts = ilp_front(base) if ilp_dir and three_obj else None
+        if pts is not None:
+            ilp = pts.tolist()  # common.dominance_based_gap compares lists
         for r in group:
             o = np.array(objs_of(r))
             row = {"workload": wl, "variant": r["variant"], "algorithm": r["algorithm"], "seed": r["seed"],
@@ -340,6 +362,8 @@ def main():
         s.add_argument("--stale-min", type=float, default=180, help="take over a lock older than this")
         s.add_argument("--status", action="store_true", help="print the progress of the grid and exit")
         if name == "paper":
+            s.add_argument("--copy-only", action="store_true",
+                           help="only copy the finished 3-objective 50/100-request INFIT runs from the ablation; run nothing")
             s.add_argument("--objective-sets", nargs="+", default=list(OBJECTIVE_SETS), choices=list(OBJECTIVE_SETS))
     r = sub.add_parser("report")
     r.add_argument("exp", choices=["large", "ablation", "paper"])
@@ -360,7 +384,7 @@ def main():
             launch_workers(a.workers, sys.argv[1:])
         else:
             run_grid(a.cmd, a.variants, sizes, a.usecases, a.algos, a.seeds, a.evals, a.processes, a.dry_run,
-                     osets, a.time_budget, a.stale_min)
+                     osets, a.time_budget, a.stale_min, getattr(a, "copy_only", False))
 
 
 if __name__ == "__main__":
