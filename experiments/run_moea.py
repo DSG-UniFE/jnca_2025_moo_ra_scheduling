@@ -293,7 +293,7 @@ def report(exp, feasible_only, ilp_dir):
         three_obj = wl.endswith("_f1f2f3") or "_" not in wl
         ilp_file = os.path.join(ilp_dir, f"{uc}{size}", "objectives", "objectives_gap_0.0.txt") if ilp_dir and three_obj else None
         if ilp_file and os.path.exists(ilp_file):
-            ilp = np.loadtxt(ilp_file, ndmin=2)
+            ilp = np.loadtxt(ilp_file, ndmin=2).tolist()  # common.dominance_based_gap compares lists
         for r in group:
             o = np.array(objs_of(r))
             row = {"workload": wl, "variant": r["variant"], "algorithm": r["algorithm"], "seed": r["seed"],
@@ -308,12 +308,13 @@ def report(exp, feasible_only, ilp_dir):
             rows.append(row)
     df = pd.DataFrame(rows)
     os.makedirs(os.path.join(OUT, "reports"), exist_ok=True)
-    raw = os.path.join(OUT, "reports", f"{exp}_per_run.csv")
+    tag = "_feasible" if feasible_only else ""
+    raw = os.path.join(OUT, "reports", f"{exp}{tag}_per_run.csv")
     df.to_csv(raw, index=False)
     metrics = [c for c in ["time_s", "front_size", "feasible_pop", "feasible_front", "hv", "igd", "sparsity", "dg_sum"] if c in df]
     summ = df.groupby(["workload", "variant", "algorithm"])[metrics].agg(["mean", "std"])
     summ.columns = [f"{a}_{b}" for a, b in summ.columns]
-    out = os.path.join(OUT, "reports", f"{exp}_summary.csv")
+    out = os.path.join(OUT, "reports", f"{exp}{tag}_summary.csv")
     summ.to_csv(out)
     print(summ.round(4).to_string())
     print("\nwrote", raw, "and", out)
