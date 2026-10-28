@@ -1,4 +1,4 @@
-"""Robustness of Pareto-optimal plans under latency jitter (R6-4, experiment 1).
+"""Robustness of Pareto-optimal plans under latency jitter .
 
 Re-evaluates existing fronts under sampled latency realizations. It needs no new
 optimization runs. The mean latency of every (origin region, data center) pair is
@@ -16,7 +16,7 @@ Sources of fronts
   --source paper  fronts of the paper (MOEA/results/<workload>/*.FUN.* and *.VAR.*)
 
 The ILP fronts are not included: their assignments are in the Gurobi solution
-files, not in a variable vector. Add a loader if the letter needs the ILP row.
+files, not in a variable vector. Add a loader to include the ILP row.
 
     python experiments/jitter_eval.py --source paper --sigma 0.1 0.2 0.4
     python experiments/jitter_eval.py --source json --exp large

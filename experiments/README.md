@@ -9,9 +9,9 @@ Run everything from the repository root.
 
 | item | Command |
 |---|---|
-| R3-5 large scale | `python experiments/gen_requests.py` then `python experiments/run_moea.py large` |
-| R6-5 INFIT ablation | `python experiments/run_moea.py ablation` |
-| R6-4 latency jitter | `python experiments/jitter_eval.py --source paper` (existing fronts, no new runs) |
+| Large scale | `python experiments/gen_requests.py` then `python experiments/run_moea.py large` |
+| INFIT ablation | `python experiments/run_moea.py ablation` |
+| Latency jitter | `python experiments/jitter_eval.py --source paper` (existing fronts, no new runs) |
 | Gap and time-limit sweep | `python experiments/run_sensitivity.py` (needs Julia and Gurobi) |
 | Metrics tables | `python experiments/run_moea.py report large` / `report ablation` |
 

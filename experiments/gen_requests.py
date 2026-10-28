@@ -1,4 +1,4 @@
-"""Generate the large-scale request files (R3-5) for the four use cases.
+"""Generate the large-scale request files for the four use cases.
 
 Mirrors request_generator.py (same distributions and ranges) but takes the sizes
 and a seed from the command line and writes to services/types_large/, so the

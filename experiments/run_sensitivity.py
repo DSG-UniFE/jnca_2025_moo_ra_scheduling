@@ -1,4 +1,4 @@
-"""MIP-gap and time-limit sensitivity of the MO-ILP (new experiment of the letter).
+"""MIP-gap and time-limit sensitivity of the MO-ILP .
 
 MO-ILP_Gpu_added.jl hard-codes the use case, the gap list and the 1000 s time
 limit, and writes into results/usecase/. To leave that file and the paper's

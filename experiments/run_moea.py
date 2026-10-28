@@ -1,7 +1,7 @@
-"""Run the MOEA experiments requested in the response letter.
+"""Run the additional MOEA experiments (large scale and INFIT ablation).
 
-    large     R3-5  large-scale evaluation (metaheuristics only, 3 objectives)
-    ablation  R6-5  INFIT ablation (full INFIT vs. INFIT without repair)
+    large     large-scale evaluation (metaheuristics only, 3 objectives)
+    ablation  INFIT ablation (full INFIT vs. INFIT without repair)
     report          HV, IGD, sparsity, feasibility, time (and DG) from saved runs
 
 Every run is written to its own JSON file and skipped if it already exists, so
