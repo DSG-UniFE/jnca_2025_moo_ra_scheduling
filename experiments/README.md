@@ -9,6 +9,7 @@ Run everything from the repository root.
 
 | item | Command |
 |---|---|
+| Rerun of the paper evaluation (fixed decoder, `MOEA_2026/`) | `python experiments/run_moea.py paper` |
 | Large scale | `python experiments/gen_requests.py` then `python experiments/run_moea.py large` |
 | INFIT ablation | `python experiments/run_moea.py ablation` |
 | Latency jitter | `python experiments/jitter_eval.py --source paper` (existing fronts, no new runs) |
@@ -18,6 +19,13 @@ Run everything from the repository root.
 Useful options: `--sizes`, `--usecases`, `--algos`, `--seeds N` (default 10),
 `--evals` (default 50000), `--processes` (default 8), `--dry-run`. Every run is saved
 to its own JSON file and skipped on restart, so jobs can be interrupted and resumed.
+
+## Code versions
+
+The runner uses `MOEA_2026/` (fixed decoder, see `MOEA_2026/README.md`) by default. `MOEA_DIR=MOEA`
+runs the code of the submitted paper (three objectives only). The paper evaluation covers the
+small, 50 and 100-request workloads with the 3-objective and the three 2-objective problems;
+`paper --objective-sets f1f2f3 f1f2 f1f3 f2f3` selects them.
 
 ## Ablation variants
 

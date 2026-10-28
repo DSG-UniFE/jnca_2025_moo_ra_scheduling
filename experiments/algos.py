@@ -10,8 +10,14 @@ import sys
 
 import numpy as np
 
+# jMetalPy 1.7 still uses the removed aliases np.int and np.float (NSGA-III); restore them on NumPy >= 1.24
+for _name, _type in (('int', int), ('float', float)):
+    if _name not in np.__dict__:
+        setattr(np, _name, _type)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MOEA_DIR = os.path.join(ROOT, "MOEA")
+MOEA_NAME = os.environ.get("MOEA_DIR", "MOEA_2026")  # "MOEA" reproduces the code used in the paper
+MOEA_DIR = os.path.join(ROOT, MOEA_NAME)
 sys.path.insert(0, MOEA_DIR)
 
 from jmetal.algorithm.multiobjective.mocell import MOCell
@@ -64,7 +70,7 @@ def build(name, problem, evals=50_000, processes=8):
         kw = {"population_evaluator": ev} if ev else {}
         return NSGAIII(
             problem=problem,
-            reference_directions=UniformReferenceDirectionFactory(n_dim=3, n_points=30),
+            reference_directions=UniformReferenceDirectionFactory(n_dim=problem.number_of_objectives(), n_points=30),
             population_size=150,
             mutation=IntegerPolynomialMutation(probability=0.6, distribution_index=30),
             crossover=IntegerSBXCrossover(probability=0.6, distribution_index=15),

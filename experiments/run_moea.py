@@ -1,8 +1,13 @@
-"""Run the additional MOEA experiments (large scale and INFIT ablation).
+"""Run the MOEA experiments with the fixed decoder in MOEA_2026/.
 
+    paper     rerun of the paper evaluation (small, 50 and 100 requests; 3-objective and the
+              three 2-objective problems) with the fixed code
     large     large-scale evaluation (metaheuristics only, 3 objectives)
     ablation  INFIT ablation (full INFIT vs. INFIT without repair)
-    report          HV, IGD, sparsity, feasibility, time (and DG) from saved runs
+    report    HV, IGD, sparsity, feasibility, time (and DG) from saved runs
+
+The code version is chosen with the environment variable MOEA_DIR (default MOEA_2026;
+MOEA_DIR=MOEA runs the code of the paper, three objectives only).
 
 Every run is written to its own JSON file and skipped if it already exists, so
 an interrupted job can be restarted with the same command.
@@ -25,7 +30,7 @@ from multiprocessing import freeze_support
 import numpy as np
 
 import algos
-from algos import ALGORITHMS, ROOT, MOEA_DIR
+from algos import ALGORITHMS, ROOT, MOEA_DIR, MOEA_NAME
 
 USECASES = ["ai", "iiot", "smartcity", "vr"]
 OUT = os.path.join(ROOT, "experiments", "results")
@@ -37,20 +42,28 @@ SERVICES = {"paper": os.path.join(ROOT, "services", "types"),
 #   norepair repair loops off, violations stored as positive numbers as in the original
 #            code, which jMetal does not treat as violations (the algorithms ignore them)
 #   penalty  repair loops off, violations visible to jMetal (constrained dominance)
-VARIANTS = {"infit": {"repair": True}, "norepair": {"repair": False},
+VARIANTS = {"infit": {"repair": True}, "norepair": {"repair": False, "penalize": False},
             "penalty": {"repair": False, "penalize": True}}
+# objective sets of the paper: indexes into (f1, f2, f3)
+OBJECTIVE_SETS = {"f1f2f3": (0, 1, 2), "f1f2": (0, 1), "f1f3": (0, 2), "f2f3": (1, 2)}
 
 
 def service_file(usecase, size):
     for d in (SERVICES["paper"], SERVICES["large"]):
-        f = os.path.join(d, f"{usecase}{size}.csv")
+        f = os.path.join(d, f"{usecase}{size}.csv")  # size "" is the small workload (e.g. ai.csv)
         if os.path.exists(f):
             return f
     raise FileNotFoundError(f"no request file for {usecase}{size}; run gen_requests.py")
 
 
-def run_one(problem_cls, sfile, kwargs, alg, seed, evals, processes, out_json):
+def run_one(problem_cls, sfile, kwargs, alg, seed, evals, processes, out_json, objectives=(0, 1, 2)):
     algos.seed_everything(seed)
+    kwargs = dict(kwargs)
+    if MOEA_NAME == "MOEA":  # the original class has no objective selection
+        if tuple(objectives) != (0, 1, 2):
+            raise SystemExit("the original MOEA folder only supports the three-objective problem")
+    else:
+        kwargs["objectives"] = tuple(objectives)
     problem = problem_cls(sfile, **kwargs)
     algorithm = algos.build(alg, problem, evals=evals, processes=processes)
     t0 = time.time()
@@ -62,7 +75,7 @@ def run_one(problem_cls, sfile, kwargs, alg, seed, evals, processes, out_json):
     feasible = lambda s: all(c >= 0 for c in s.constraints) and sum(abs(c) for c in s.constraints) == 0
     rec = {
         "algorithm": alg, "seed": seed, "evals": evals, "repair": kwargs.get("repair", True),
-        "service_file": os.path.basename(sfile), "num_requests": problem.num_requests,
+        "service_file": os.path.basename(sfile), "objectives": list(objectives), "moea": MOEA_NAME, "num_requests": problem.num_requests,
         "num_replicas": problem.num_replicas, "time_s": elapsed,
         "final_population_size": len(result),
         "feasible_share_population": float(np.mean([feasible(s) for s in result])) if result else 0.0,
@@ -77,26 +90,31 @@ def run_one(problem_cls, sfile, kwargs, alg, seed, evals, processes, out_json):
     return rec
 
 
-def run_grid(exp, variants, sizes, usecases, algs, seeds, evals, processes, dry):
+def run_grid(exp, variants, sizes, usecases, algs, seeds, evals, processes, dry, objective_sets=("f1f2f3",)):
     from moo_ra_4 import MooRa4
     n = 0
     for variant in variants:
         for uc in usecases:
             for size in sizes:
-                for alg in algs:
-                    for seed in range(seeds):
-                        out = os.path.join(OUT, exp, variant, f"{uc}{size}", f"seed{seed}", f"{alg}.json")
-                        n += 1
-                        if os.path.exists(out):
-                            print("skip (done):", out)
-                            continue
-                        if dry:
-                            print("would run:", exp, variant, uc, size, alg, "seed", seed)
-                            continue
-                        print(f"[{n}] {exp} {variant} {uc}{size} {alg} seed={seed}", flush=True)
-                        rec = run_one(MooRa4, service_file(uc, size), VARIANTS[variant], alg, seed, evals, processes, out)
-                        print(f"    time={rec['time_s']:.1f}s front={len(rec['objectives'])} "
-                              f"feasible(pop)={rec['feasible_share_population']:.2f}", flush=True)
+                size = "" if size == "small" else size
+                for oset in objective_sets:
+                    # the three-objective workloads keep the plain name used by the other experiments
+                    wl = f"{uc}{size}" if exp != "paper" else f"{uc}{size or 'small'}_{oset}"
+                    for alg in algs:
+                        for seed in range(seeds):
+                            out = os.path.join(OUT, exp, variant, wl, f"seed{seed}", f"{alg}.json")
+                            n += 1
+                            if os.path.exists(out):
+                                print("skip (done):", out)
+                                continue
+                            if dry:
+                                print("would run:", exp, variant, wl, alg, "seed", seed)
+                                continue
+                            print(f"[{n}] {exp} {variant} {wl} {alg} seed={seed}", flush=True)
+                            rec = run_one(MooRa4, service_file(uc, size), VARIANTS[variant], alg, seed, evals,
+                                          processes, out, OBJECTIVE_SETS[oset])
+                            print(f"    time={rec['time_s']:.1f}s front={len(rec['objectives'])} "
+                                  f"feasible(pop)={rec['feasible_share_population']:.2f}", flush=True)
     print("configurations:", n)
 
 
@@ -150,9 +168,11 @@ def report(exp, feasible_only, ilp_dir):
         hv = HyperVolume((pool.max(axis=0) * 1.1).tolist())
         igd = InvertedGenerationalDistance(pool)
         ilp = None
-        uc = wl.rstrip("0123456789")
-        size = wl[len(uc):]
-        ilp_file = os.path.join(ilp_dir, f"{uc}{size}", "objectives", "objectives_gap_0.0.txt") if ilp_dir else None
+        base = wl.split("_")[0]
+        uc = base.rstrip("0123456789")
+        size = base[len(uc):]
+        three_obj = wl.endswith("_f1f2f3") or "_" not in wl
+        ilp_file = os.path.join(ilp_dir, f"{uc}{size}", "objectives", "objectives_gap_0.0.txt") if ilp_dir and three_obj else None
         if ilp_file and os.path.exists(ilp_file):
             ilp = np.loadtxt(ilp_file, ndmin=2)
         for r in group:
@@ -183,9 +203,10 @@ def report(exp, feasible_only, ilp_dir):
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
-    for name, sizes, variants in (("large", [250, 500, 1000], ["infit"]), ("ablation", [50, 100], ["infit", "penalty"])):
+    for name, sizes, variants in (("large", [250, 500, 1000], ["infit"]), ("ablation", [50, 100], ["infit", "penalty"]),
+                                  ("paper", ["small", 50, 100], ["infit"])):
         s = sub.add_parser(name)
-        s.add_argument("--sizes", type=int, nargs="+", default=sizes)
+        s.add_argument("--sizes", nargs="+", default=sizes, help="workload sizes; 'small' is the file without a size suffix")
         s.add_argument("--usecases", nargs="+", default=USECASES, choices=USECASES)
         s.add_argument("--algos", nargs="+", default=ALGORITHMS, choices=ALGORITHMS)
         s.add_argument("--variants", nargs="+", default=variants, choices=list(VARIANTS))
@@ -193,8 +214,10 @@ def main():
         s.add_argument("--evals", type=int, default=50_000)
         s.add_argument("--processes", type=int, default=8, help="1 disables multiprocessing")
         s.add_argument("--dry-run", action="store_true")
+        if name == "paper":
+            s.add_argument("--objective-sets", nargs="+", default=list(OBJECTIVE_SETS), choices=list(OBJECTIVE_SETS))
     r = sub.add_parser("report")
-    r.add_argument("exp", choices=["large", "ablation"])
+    r.add_argument("exp", choices=["large", "ablation", "paper"])
     r.add_argument("--feasible-only", action="store_true", help="drop infeasible solutions before computing metrics")
     r.add_argument("--ilp-dir", default=os.path.join(ROOT, "results", "usecase"),
                    help="folder with <usecase>/objectives/objectives_gap_0.0.txt, used for the Dominance-based Gap")
@@ -204,7 +227,9 @@ def main():
     if a.cmd == "report":
         report(a.exp, a.feasible_only, a.ilp_dir)
     else:
-        run_grid(a.cmd, a.variants, a.sizes, a.usecases, a.algos, a.seeds, a.evals, a.processes, a.dry_run)
+        sizes = [x if x == "small" else int(x) for x in a.sizes]
+        run_grid(a.cmd, a.variants, sizes, a.usecases, a.algos, a.seeds, a.evals, a.processes, a.dry_run,
+                 getattr(a, "objective_sets", ["f1f2f3"]))
 
 
 if __name__ == "__main__":
