@@ -20,6 +20,21 @@ Useful options: `--sizes`, `--usecases`, `--algos`, `--seeds N` (default 10),
 `--evals` (default 50000), `--processes` (default 8), `--dry-run`. Every run is saved
 to its own JSON file and skipped on restart, so jobs can be interrupted and resumed.
 
+## Restarting, parallel workers, progress
+
+Results of each code version go to `experiments/results/<MOEA_NAME>/` (`MOEA` is the code of the
+paper, `MOEA_2026` the fixed one). A run is skipped when its JSON exists with the same number
+of evaluations, results are written atomically, and a killed run only loses itself: the same
+command resumes where it stopped. Runs are ordered seed first, so stopping early leaves complete seeds.
+
+    MOEA_DIR=MOEA_2026 python experiments/run_moea.py ablation --sizes 50 100 --seeds 3 --workers 6
+    MOEA_DIR=MOEA_2026 python experiments/run_moea.py ablation --sizes 50 100 --seeds 3 --status
+    MOEA_DIR=MOEA_2026 python experiments/run_moea.py ablation --sizes 50 100 --seeds 3 --time-budget 55
+
+`--workers N` starts N processes that share the grid through lock files (logs in
+`experiments/results/<MOEA_NAME>/logs/`); `--time-budget MIN` stops starting new runs after MIN
+minutes and lets the running ones finish. `pkill -f run_moea.py` stops everything.
+
 ## Code versions
 
 The runner uses `MOEA_2026/` (fixed decoder, see `MOEA_2026/README.md`) by default. `MOEA_DIR=MOEA`

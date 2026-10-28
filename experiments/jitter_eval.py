@@ -32,7 +32,7 @@ import pandas as pd
 import algos
 from algos import ROOT, MOEA_DIR
 
-OUT = os.path.join(ROOT, "experiments", "results")
+OUT = algos.RESULTS
 ALG_FROM_FILE = {"Random Search": "RandomSearch"}
 
 

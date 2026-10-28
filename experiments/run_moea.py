@@ -33,7 +33,7 @@ import algos
 from algos import ALGORITHMS, ROOT, MOEA_DIR, MOEA_NAME
 
 USECASES = ["ai", "iiot", "smartcity", "vr"]
-OUT = os.path.join(ROOT, "experiments", "results")
+OUT = algos.RESULTS
 # Paper services files (50/100 requests) and the large files made by gen_requests.py
 SERVICES = {"paper": os.path.join(ROOT, "services", "types"),
             "large": os.path.join(ROOT, "services", "types_large")}
@@ -85,37 +85,156 @@ def run_one(problem_cls, sfile, kwargs, alg, seed, evals, processes, out_json, o
         "variables": [list(map(int, s.variables)) for s in front],
     }
     os.makedirs(os.path.dirname(out_json), exist_ok=True)
-    with open(out_json, "w") as f:
+    tmp = out_json + ".tmp"
+    with open(tmp, "w") as f:
         json.dump(rec, f)
+    os.replace(tmp, out_json)  # a killed job never leaves a half-written result
     return rec
 
 
-def run_grid(exp, variants, sizes, usecases, algs, seeds, evals, processes, dry, objective_sets=("f1f2f3",)):
-    from moo_ra_4 import MooRa4
-    n = 0
-    for variant in variants:
-        for uc in usecases:
-            for size in sizes:
-                size = "" if size == "small" else size
+def build_tasks(exp, variants, sizes, usecases, algs, seeds, objective_sets):
+    """All runs in priority order: seed first, so that stopping early leaves complete seeds,
+    then small workloads before large ones."""
+    tasks = []
+    for seed in range(seeds):
+        for size in sizes:
+            size = "" if size == "small" else size
+            for uc in usecases:
                 for oset in objective_sets:
-                    # the three-objective workloads keep the plain name used by the other experiments
-                    wl = f"{uc}{size}" if exp != "paper" else f"{uc}{size or 'small'}_{oset}"
-                    for alg in algs:
-                        for seed in range(seeds):
+                    for variant in variants:
+                        for alg in algs:
+                            wl = f"{uc}{size}" if exp != "paper" else f"{uc}{size or 'small'}_{oset}"
                             out = os.path.join(OUT, exp, variant, wl, f"seed{seed}", f"{alg}.json")
-                            n += 1
-                            if os.path.exists(out):
-                                print("skip (done):", out)
-                                continue
-                            if dry:
-                                print("would run:", exp, variant, wl, alg, "seed", seed)
-                                continue
-                            print(f"[{n}] {exp} {variant} {wl} {alg} seed={seed}", flush=True)
-                            rec = run_one(MooRa4, service_file(uc, size), VARIANTS[variant], alg, seed, evals,
-                                          processes, out, OBJECTIVE_SETS[oset])
-                            print(f"    time={rec['time_s']:.1f}s front={len(rec['objectives'])} "
-                                  f"feasible(pop)={rec['feasible_share_population']:.2f}", flush=True)
-    print("configurations:", n)
+                            tasks.append(dict(exp=exp, variant=variant, wl=wl, uc=uc, size=size, alg=alg,
+                                              seed=seed, oset=oset, out=out))
+    return tasks
+
+
+def is_done(task, evals):
+    """A result counts only if it was produced with the requested number of evaluations."""
+    if not os.path.exists(task["out"]):
+        return False
+    try:
+        with open(task["out"]) as fh:
+            return json.load(fh).get("evals") == evals
+    except (OSError, ValueError):
+        return False
+
+
+def pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+def claim(task, stale_min):
+    """Claim a run with an exclusive lock file so that several workers can share the grid.
+    A lock whose process is gone, or that is older than stale_min minutes, is taken over."""
+    lock = task["out"] + ".lock"
+    os.makedirs(os.path.dirname(lock), exist_ok=True)
+    for _ in range(2):
+        try:
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, str(os.getpid()).encode())
+            os.close(fd)
+            return lock
+        except FileExistsError:
+            try:
+                pid = int(open(lock).read().strip() or 0)
+                age = (time.time() - os.path.getmtime(lock)) / 60
+                if (pid and not pid_alive(pid)) or age > stale_min:
+                    os.remove(lock)
+                    continue
+            except (OSError, ValueError):
+                pass
+            return None
+    return None
+
+
+def run_grid(exp, variants, sizes, usecases, algs, seeds, evals, processes, dry,
+             objective_sets=("f1f2f3",), time_budget=None, stale_min=180):
+    from moo_ra_4 import MooRa4
+    tasks = build_tasks(exp, variants, sizes, usecases, algs, seeds, objective_sets)
+    start = time.time()
+    done = ran = 0
+    for n, t in enumerate(tasks, 1):
+        if is_done(t, evals):
+            done += 1
+            continue
+        if dry:
+            print("would run:", exp, t["variant"], t["wl"], t["alg"], "seed", t["seed"])
+            continue
+        if time_budget is not None and (time.time() - start) / 60 >= time_budget:
+            print(f"time budget of {time_budget} min reached: no new runs started", flush=True)
+            break
+        lock = claim(t, stale_min)
+        if lock is None:
+            continue  # another worker has it
+        try:
+            print(f"[{n}/{len(tasks)}] {MOEA_NAME} {exp} {t['variant']} {t['wl']} {t['alg']} seed={t['seed']}", flush=True)
+            rec = run_one(MooRa4, service_file(t["uc"], t["size"]), VARIANTS[t["variant"]], t["alg"], t["seed"],
+                          evals, processes, t["out"], OBJECTIVE_SETS[t["oset"]])
+            ran += 1
+            print(f"    time={rec['time_s']:.1f}s front={len(rec['objectives'])} "
+                  f"feasible(pop)={rec['feasible_share_population']:.2f}", flush=True)
+        finally:
+            if os.path.exists(lock):
+                os.remove(lock)
+    print(f"configurations: {len(tasks)}  already done: {done}  run by this worker: {ran}")
+
+
+def status(exp, variants, sizes, usecases, algs, seeds, evals, objective_sets):
+    tasks = build_tasks(exp, variants, sizes, usecases, algs, seeds, objective_sets)
+    done = sum(is_done(t, evals) for t in tasks)
+    def alive(t):
+        try:
+            return pid_alive(int(open(t["out"] + ".lock").read().strip()))
+        except (OSError, ValueError):
+            return False
+    running = [t for t in tasks if os.path.exists(t["out"] + ".lock") and alive(t)]
+    print(f"{MOEA_NAME} {exp}: {done}/{len(tasks)} runs done, {len(running)} running")
+    for seed in range(seeds):
+        ts = [t for t in tasks if t["seed"] == seed]
+        print(f"  seed {seed}: {sum(is_done(t, evals) for t in ts)}/{len(ts)}")
+    for t in running:
+        print("  running:", t["variant"], t["wl"], t["alg"], "seed", t["seed"])
+
+
+def launch_workers(n, argv):
+    """Start n worker processes with the same arguments (minus --workers) and wait for them."""
+    import subprocess
+    logdir = os.path.join(OUT, "logs")
+    os.makedirs(logdir, exist_ok=True)
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    args = []
+    skip = False
+    for x in argv:
+        if skip:
+            skip = False
+            continue
+        if x == "--workers":
+            skip = True
+            continue
+        if x.startswith("--workers="):
+            continue
+        args.append(x)
+    procs = []
+    for i in range(n):
+        log = open(os.path.join(logdir, f"{stamp}_{exp_name(argv)}_w{i}.log"), "w")
+        procs.append(subprocess.Popen([sys.executable, os.path.abspath(__file__)] + args,
+                                      stdout=log, stderr=subprocess.STDOUT, env=os.environ.copy()))
+        time.sleep(1)  # stagger the first claims
+    print(f"started {n} workers of {MOEA_NAME}; logs in {logdir}", flush=True)
+    for p in procs:
+        p.wait()
+
+
+def exp_name(argv):
+    return next((x for x in argv if x in ("paper", "large", "ablation")), "run")
 
 
 # ---------------------------------------------------------------- report
@@ -212,8 +331,13 @@ def main():
         s.add_argument("--variants", nargs="+", default=variants, choices=list(VARIANTS))
         s.add_argument("--seeds", type=int, default=10, help="seeds 0..N-1 per configuration")
         s.add_argument("--evals", type=int, default=50_000)
-        s.add_argument("--processes", type=int, default=8, help="1 disables multiprocessing")
+        s.add_argument("--processes", type=int, default=1, help="processes of the jMetal evaluator inside one run (use --workers to parallelize runs)")
         s.add_argument("--dry-run", action="store_true")
+        s.add_argument("--time-budget", type=float, default=None,
+                       help="minutes after which this worker stops starting new runs (running ones finish)")
+        s.add_argument("--workers", type=int, default=1, help="parallel worker processes sharing the grid")
+        s.add_argument("--stale-min", type=float, default=180, help="take over a lock older than this")
+        s.add_argument("--status", action="store_true", help="print the progress of the grid and exit")
         if name == "paper":
             s.add_argument("--objective-sets", nargs="+", default=list(OBJECTIVE_SETS), choices=list(OBJECTIVE_SETS))
     r = sub.add_parser("report")
@@ -228,8 +352,14 @@ def main():
         report(a.exp, a.feasible_only, a.ilp_dir)
     else:
         sizes = [x if x == "small" else int(x) for x in a.sizes]
-        run_grid(a.cmd, a.variants, sizes, a.usecases, a.algos, a.seeds, a.evals, a.processes, a.dry_run,
-                 getattr(a, "objective_sets", ["f1f2f3"]))
+        osets = getattr(a, "objective_sets", ["f1f2f3"])
+        if a.status:
+            status(a.cmd, a.variants, sizes, a.usecases, a.algos, a.seeds, a.evals, osets)
+        elif a.workers > 1:
+            launch_workers(a.workers, sys.argv[1:])
+        else:
+            run_grid(a.cmd, a.variants, sizes, a.usecases, a.algos, a.seeds, a.evals, a.processes, a.dry_run,
+                     osets, a.time_budget, a.stale_min)
 
 
 if __name__ == "__main__":
