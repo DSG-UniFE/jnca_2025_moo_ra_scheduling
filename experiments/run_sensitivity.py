@@ -4,7 +4,8 @@ MO-ILP_Gpu_added.jl hard-codes the use case, the gap list and the 1000 s time
 limit, and writes into results/usecase/. To leave that file and the paper's
 results untouched, this script writes a patched copy of the Julia script to
 experiments/results/sensitivity/<case>/ and runs it from there with every output
-path redirected. Each substitution is checked to match exactly once.
+path redirected. Each substitution is checked to match exactly once. Julia runs
+inside the run directory, so Gurobi's SolFiles of parallel runs do not collide.
 
     python experiments/run_sensitivity.py --usecases vr --sizes 50 100 \
         --gaps 0.0 0.05 0.1 0.25 0.5 0.75 --time-limits 100 300 1000 --dry-run
@@ -35,7 +36,7 @@ end
 using .Plots'''
 
 
-def patch(src, usecase, gap, tlimit, results_dir, plots=False):
+def patch(src, usecase, gap, tlimit, results_dir, plots=False, threads=0):
     def sub(pattern, repl, text):
         new, n = re.subn(pattern, lambda m: repl, text, flags=re.M)
         if n != 1:
@@ -47,6 +48,8 @@ def patch(src, usecase, gap, tlimit, results_dir, plots=False):
         s = sub(r"^using Plots$", PLOTS_STUB, s)
     s = sub(r"^mip_gaps = \[0\.0\].*$", f"mip_gaps = [{gap}]", s)
     s = sub(r"TimeLimitSec\(\), 1000\)", f"TimeLimitSec(), {tlimit})", s)
+    s = sub(r'^\s*#set_optimizer_attribute\(model, "Threads", 4\)\s*$',
+            f'\tset_optimizer_attribute(model, "Threads", {threads})', s)
     s = sub(r'^usecase = "[a-z0-9]+".*$', f'usecase = "{usecase}"', s)
     s = sub(r'^results_path = .*$', f'results_path = "{results_dir}/"', s)
     s = sub(r'^latency_file = .*$', f'latency_file = "{ROOT}/AWS/latency.csv"', s)
@@ -63,6 +66,8 @@ def main():
     p.add_argument("--time-limits", type=int, nargs="+", default=[100, 300, 1000])
     p.add_argument("--julia", default="julia")
     p.add_argument("--plots", action="store_true", help="keep the figures of the original script (needs a working Plots)")
+    p.add_argument("--threads", type=int, default=int(os.environ.get("SLURM_CPUS_PER_TASK", 0)),
+                   help="Gurobi Threads (0 = Gurobi default); defaults to SLURM_CPUS_PER_TASK when set")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
 
@@ -78,14 +83,14 @@ def main():
                         continue
                     print("run:", case, "time limit", tl, "gap", gap)
                     if a.dry_run:
-                        patch(src, case, gap, tl, d, a.plots)  # still validates the substitutions
+                        patch(src, case, gap, tl, d, a.plots, a.threads)  # still validates the substitutions
                         continue
                     os.makedirs(d, exist_ok=True)
                     script = os.path.join(d, "run.jl")
                     with open(script, "w") as f:
-                        f.write(patch(src, case, gap, tl, d, a.plots))
+                        f.write(patch(src, case, gap, tl, d, a.plots, a.threads))
                     with open(os.path.join(d, "output.txt"), "w") as log:
-                        subprocess.run([a.julia, script], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=False)
+                        subprocess.run([a.julia, script], cwd=d, stdout=log, stderr=subprocess.STDOUT, check=False)
 
 
 if __name__ == "__main__":
