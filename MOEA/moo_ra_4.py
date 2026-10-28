@@ -11,8 +11,14 @@ from jmetal.core.solution import IntegerSolution, FloatSolution
 class MooRa4(IntegerProblem):
     """ Multi-Cluster problem """
 
-    def __init__(self, service_file):
+    def __init__(self, service_file, repair=True, penalize=False):
         super(MooRa4, self).__init__()
+        # repair=False disables the latency and capacity repair loops in calculate_costs
+        # (used by the INFIT ablation); the default keeps the original behavior
+        self.repair = repair
+        # penalize=True stores violations as negative values, the jMetal convention, so that
+        # constrained dominance sees them; the default (positive) is the original behavior
+        self.constraint_sign = -1 if penalize else 1
         self.load_requests_data(service_file)
         self.load_instances_data('./cnsm_data/pricing.csv', './cnsm_data/AWS_EC2_Latency.csv')
         print(f'Number of datacenters: {self.num_datacenters} and number of requests: {self.num_requests}')
@@ -172,7 +178,7 @@ class MooRa4(IntegerProblem):
             latency = self.latency_lookup[(request_location, dc)]
             # the first requirement to check will be latency here
             # so we are going to repair the solution if the latency is not respected
-            while latency > latency_required:
+            while self.repair and latency > latency_required:
                 dc_idx = (dc_idx + 1) % self.num_datacenters
                 dc = self.datacenters[int(dc_idx)]
                 #print(dc_idx, dc, latency, latency_required)
@@ -187,7 +193,7 @@ class MooRa4(IntegerProblem):
             ram_capacity = self.ram_capacity[(dc, instance)]
             gpu_capacity = self.gpu_capacity[(dc, instance)]
 
-            while cpu_capacity < cpu_required or ram_capacity < ram_required or gpu_capacity < gpu_required:
+            while self.repair and (cpu_capacity < cpu_required or ram_capacity < ram_required or gpu_capacity < gpu_required):
                 # try with a different BIN (bigger bins is better)
                 instance_alg_idx = (instance_alg_idx + 1) % 6
                 instance_alg = self.instances[instance_alg_idx]
@@ -256,7 +262,7 @@ class MooRa4(IntegerProblem):
         total_costs['total_cost'] = total_cost
 
         latency_violations = self.latency_violations(solution)
-        if (latency_violations > 0):
+        if (latency_violations > 0 and self.repair):
             print(f'Latency violations before: {latency_violations_before} after: {latency_violations}, process_id: {os.getpid()}')
             print(f'Variables: {solution.variables[self.num_requests:]}')
 
@@ -328,11 +334,11 @@ class MooRa4(IntegerProblem):
         solution.objectives[2] = qos
 
         # Imposta i vincoli come violazioni (più violazioni => peggio è)
-        solution.constraints[0] = self.check_number_of_replicas(solution)
-        solution.constraints[1] = cpu_violations
-        solution.constraints[2] = ram_violations
-        solution.constraints[3] = gpu_violations
-        solution.constraints[4] = latency_violations
+        solution.constraints[0] = self.constraint_sign * self.check_number_of_replicas(solution)
+        solution.constraints[1] = self.constraint_sign * cpu_violations
+        solution.constraints[2] = self.constraint_sign * ram_violations
+        solution.constraints[3] = self.constraint_sign * gpu_violations
+        solution.constraints[4] = self.constraint_sign * latency_violations
         
         return solution
 
