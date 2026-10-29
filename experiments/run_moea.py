@@ -302,7 +302,7 @@ def launch_workers(n, argv):
     import subprocess
     logdir = os.path.join(OUT, "logs")
     os.makedirs(logdir, exist_ok=True)
-    stamp = time.strftime("%Y%m%d-%H%M%S")
+    stamp = time.strftime("%Y%m%d-%H%M%S") + f"_{os.getpid()}"  # array tasks start in the same second
     args = []
     skip = False
     for x in argv:
