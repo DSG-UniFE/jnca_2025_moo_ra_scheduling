@@ -38,9 +38,22 @@ minutes and lets the running ones finish. `pkill -f run_moea.py` stops everythin
 ## Large-scale evaluation (prepared, not started)
 
 The request files are in `services/types_large/` (250, 500 and 1000 requests, four use cases).
-`sh experiments/launch_large.sh` starts the runs for `MOEA_2026` and `MOEA` (options and the
-`DRY=1` count-only mode are described at the top of the script). With 3 seeds that is 216 runs per
-version, about 28 CPU hours for `MOEA` and 44 for `MOEA_2026`.
+`sh experiments/launch_large.sh` starts both versions (216 runs each with 3 seeds). It restarts
+cleanly at any time: runs are saved one by one and finished runs are skipped.
+
+    UNTIL=14:30 sh experiments/launch_large.sh    # do not start a run that cannot finish by 14:30
+    BUDGET=90   sh experiments/launch_large.sh    # the same, 90 minutes from now
+    ESTIMATE=1  sh experiments/launch_large.sh    # estimated time left, then exit
+    STATUS=1    sh experiments/launch_large.sh    # progress, then exit
+    sh experiments/stop_runs.sh                   # stop everything now (PACK=1 also packs the results)
+
+With a deadline a worker skips runs whose estimated time (times `--safety`, default 1.5) does not
+fit and keeps taking shorter ones, so a half-finished run is not lost. The longest single runs are
+the 1000-request MSPSO runs (about 40 to 60 minutes). The estimate uses the run times already on
+disk; those were measured with other jobs running, so they are conservative.
+
+On a cluster use `experiments/slurm/large.sbatch` (one array task per use case and version).
+`experiments/benchmark_node.py` times a fixed piece of the workload to compare two machines.
 
 ## Code versions
 

@@ -171,13 +171,77 @@ def claim(task, stale_min):
     return None
 
 
+# Fallback run time in seconds per request for 50,000 evaluations, from runs on the M5 Pro laptop
+# (MOEA_2026, several jobs in parallel); the old decoder is about 0.65 times as slow.
+FALLBACK_S_PER_REQUEST = {"MSPSO": 4.0, "default": 1.0}
+
+
+def rate_table():
+    """Median seconds per request and 50,000 evaluations of every algorithm, from the runs on disk."""
+    rates = {}
+    files = glob.glob(os.path.join(OUT, "*", "*", "*", "seed*", "*.json"))
+    for f in files[:400]:
+        try:
+            with open(f) as fh:
+                r = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        n, evals = r.get("num_requests"), r.get("evals")
+        if n and evals and n >= 20:
+            rates.setdefault(r["algorithm"], []).append(r["time_s"] / n * 50_000 / evals)
+    return {a: float(np.median(v)) for a, v in rates.items()}
+
+
+def estimate_seconds(task, evals, rates):
+    """Estimated duration of one run (linear in the number of requests and evaluations)."""
+    n = task["size"] if isinstance(task["size"], int) else 10
+    base = rates.get(task["alg"])
+    if base is None:
+        base = FALLBACK_S_PER_REQUEST.get(task["alg"], FALLBACK_S_PER_REQUEST["default"])
+        if MOEA_NAME == "MOEA":
+            base *= 0.65
+    return max(5.0, base * n * evals / 50_000)
+
+
+def parse_until(text):
+    """Timestamp of the next HH:MM (today, or tomorrow if that time has passed)."""
+    h, m = (int(x) for x in text.split(":"))
+    now = time.time()
+    t = time.mktime(time.strptime(time.strftime("%Y-%m-%d ") + f"{h:02d}:{m:02d}", "%Y-%m-%d %H:%M"))
+    return t if t > now else t + 86400
+
+
+def estimate(exp, variants, sizes, usecases, algs, seeds, evals, objective_sets, workers):
+    tasks = build_tasks(exp, variants, sizes, usecases, algs, seeds, objective_sets)
+    rates = rate_table()
+    todo = [t for t in tasks if not is_done(t, evals)]
+    secs = [estimate_seconds(t, evals, rates) for t in todo]
+    print(f"{MOEA_NAME} {exp}: {len(todo)} of {len(tasks)} runs left; "
+          f"rates from {len(rates)} algorithms on disk, the rest from fallbacks")
+    print(f"  total CPU time {sum(secs) / 3600:.1f} h; about {sum(secs) / 3600 / workers * 1.15:.1f} h wall with {workers} workers (+15% for imbalance)")
+    if secs:
+        print(f"  longest single run {max(secs) / 60:.0f} min (a run in progress is lost if you stop it)")
+    by = {}
+    for t, x in zip(todo, secs):
+        by.setdefault((t["size"], t["alg"]), []).append(x)
+    for (size, alg), v in sorted(by.items(), key=lambda kv: (str(kv[0][0]), kv[0][1])):
+        print(f"    size {size!s:>5} {alg:<13} {len(v):3d} runs  {np.mean(v) / 60:5.1f} min each")
+
+
 def run_grid(exp, variants, sizes, usecases, algs, seeds, evals, processes, dry,
-             objective_sets=("f1f2f3",), time_budget=None, stale_min=180, copy_only=False):
+             objective_sets=("f1f2f3",), time_budget=None, stale_min=180, copy_only=False, until=None, safety=1.5):
     from moo_ra_4 import MooRa4
     tasks = build_tasks(exp, variants, sizes, usecases, algs, seeds, objective_sets)
     start = time.time()
     done = ran = 0
     copied = 0
+    skipped_long = 0
+    deadline = None
+    if time_budget is not None:
+        deadline = start + time_budget * 60
+    if until:
+        deadline = min(deadline, parse_until(until)) if deadline else parse_until(until)
+    rates = rate_table() if deadline else {}
     for n, t in enumerate(tasks, 1):
         if is_done(t, evals):
             done += 1
@@ -187,12 +251,17 @@ def run_grid(exp, variants, sizes, usecases, algs, seeds, evals, processes, dry,
             continue
         if copy_only:
             continue
+        # a run is only started if it is expected to finish before the deadline
+        if deadline is not None:
+            need = estimate_seconds(t, evals, rates) * safety
+            if time.time() + need > deadline:
+                skipped_long += 1
+                if dry:
+                    print(f"would skip (needs about {need / 60:.0f} min, too long): {t['wl']} {t['alg']} seed {t['seed']}")
+                continue
         if dry:
             print("would run:", exp, t["variant"], t["wl"], t["alg"], "seed", t["seed"])
             continue
-        if time_budget is not None and (time.time() - start) / 60 >= time_budget:
-            print(f"time budget of {time_budget} min reached: no new runs started", flush=True)
-            break
         lock = claim(t, stale_min)
         if lock is None:
             continue  # another worker has it
@@ -206,6 +275,8 @@ def run_grid(exp, variants, sizes, usecases, algs, seeds, evals, processes, dry,
         finally:
             if os.path.exists(lock):
                 os.remove(lock)
+    if skipped_long and not dry:
+        print(f"deadline: {skipped_long} runs were not started because they would not finish in time", flush=True)
     print(f"configurations: {len(tasks)}  already done: {done}  copied from the ablation: {copied}  run by this worker: {ran}")
 
 
@@ -313,7 +384,8 @@ def report(exp, feasible_only, ilp_dir):
         uc = base.rstrip("0123456789")
         size = base[len(uc):]
         three_obj = wl.endswith("_f1f2f3") or "_" not in wl
-        pts = ilp_front(base) if ilp_dir and three_obj else None
+        ilp_name = base.replace("small", "")  # the small workloads are stored as results/usecase/<usecase>
+        pts = ilp_front(ilp_name) if ilp_dir and three_obj else None
         if pts is not None:
             ilp = pts.tolist()  # common.dominance_based_gap compares lists
         for r in group:
@@ -360,6 +432,10 @@ def main():
                        help="minutes after which this worker stops starting new runs (running ones finish)")
         s.add_argument("--workers", type=int, default=1, help="parallel worker processes sharing the grid")
         s.add_argument("--stale-min", type=float, default=180, help="take over a lock older than this")
+        s.add_argument("--until", default=None, metavar="HH:MM",
+                       help="deadline: do not start a run that is not expected to finish before this clock time")
+        s.add_argument("--safety", type=float, default=1.5, help="factor on the run-time estimate used for the deadline")
+        s.add_argument("--estimate", action="store_true", help="print the estimated time of the runs that are left and exit")
         s.add_argument("--status", action="store_true", help="print the progress of the grid and exit")
         if name == "paper":
             s.add_argument("--copy-only", action="store_true",
@@ -380,11 +456,13 @@ def main():
         osets = getattr(a, "objective_sets", ["f1f2f3"])
         if a.status:
             status(a.cmd, a.variants, sizes, a.usecases, a.algos, a.seeds, a.evals, osets)
+        elif a.estimate:
+            estimate(a.cmd, a.variants, sizes, a.usecases, a.algos, a.seeds, a.evals, osets, max(a.workers, 1))
         elif a.workers > 1:
             launch_workers(a.workers, sys.argv[1:])
         else:
             run_grid(a.cmd, a.variants, sizes, a.usecases, a.algos, a.seeds, a.evals, a.processes, a.dry_run,
-                     osets, a.time_budget, a.stale_min, getattr(a, "copy_only", False))
+                     osets, a.time_budget, a.stale_min, getattr(a, "copy_only", False), a.until, a.safety)
 
 
 if __name__ == "__main__":

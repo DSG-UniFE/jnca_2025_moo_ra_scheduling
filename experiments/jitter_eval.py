@@ -53,10 +53,16 @@ def load_paper(workloads):
                    "service_file": f"{wl}.csv"}
 
 
-def load_json(exp, workloads):
-    for f in glob.glob(os.path.join(OUT, exp, "*", "*", "seed*", "*.json")):
+def load_json(exp, workloads, variant="infit", objective_sets=("f1f2f3",)):
+    for f in sorted(glob.glob(os.path.join(OUT, exp, "*", "*", "seed*", "*.json"))):
         parts = f.split(os.sep)
-        if workloads and parts[-3] not in workloads:
+        if variant and parts[-4] != variant:
+            continue
+        wl = parts[-3]
+        oset = wl.split("_", 1)[1] if "_" in wl else "f1f2f3"  # the paper rerun names the objective set
+        if objective_sets and oset not in objective_sets:
+            continue
+        if workloads and wl.split("_")[0] not in workloads:
             continue
         with open(f) as fh:
             r = json.load(fh)
@@ -109,18 +115,36 @@ def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--source", choices=["paper", "json"], default="paper")
     p.add_argument("--exp", default="large", help="experiment folder when --source json")
-    p.add_argument("--workloads", nargs="*", help="e.g. vr50 ai100 (default: all)")
+    p.add_argument("--workloads", nargs="*", help="e.g. vr50 ai100 aismall (default: all)")
+    p.add_argument("--variant", default="infit", help="variant folder when --source json ('' = all, the penalty runs are infeasible)")
+    p.add_argument("--objective-sets", nargs="*", default=["f1f2f3"], choices=["f1f2f3", "f1f2", "f1f3", "f2f3"],
+                   help="objective sets of the paper rerun to include")
+    p.add_argument("--dry-run", action="store_true", help="list what would be evaluated and stop")
     p.add_argument("--sigma", type=float, nargs="+", default=[0.1, 0.2, 0.4],
                    help="log-scale std of the latency jitter")
     p.add_argument("--realizations", type=int, default=1000)
     p.add_argument("--seed", type=int, default=0)
     a = p.parse_args()
 
+    if a.source == "paper" and algos.MOEA_NAME != "MOEA":
+        raise SystemExit("--source paper reads the fronts of the submitted paper in MOEA/results: run with MOEA_DIR=MOEA")
     os.chdir(MOEA_DIR)
     from moo_ra_4 import MooRa4
-    runs = list(load_paper(a.workloads) if a.source == "paper" else load_json(a.exp, a.workloads))
+    runs = list(load_paper(a.workloads) if a.source == "paper"
+                else load_json(a.exp, a.workloads, a.variant, a.objective_sets))
     if not runs:
         raise SystemExit("no fronts found")
+    tag = "paper_original" if a.source == "paper" else a.exp
+    n_sol = sum(len(r["variables"]) for r in runs)
+    print(f"{algos.MOEA_NAME}: {len(runs)} fronts, {n_sol} solutions, {len({r['workload'] for r in runs})} workloads, "
+          f"sigma {a.sigma}, {a.realizations} realizations, source {tag}")
+    if a.dry_run:
+        from collections import Counter
+        c = Counter((r["workload"], r["algorithm"]) for r in runs)
+        for (wl, alg), n in sorted(c.items())[:12]:
+            print(f"  {wl} {alg}: {n} fronts")
+        print("  ...")
+        return
 
     rows = []
     cache = {}
@@ -140,11 +164,13 @@ def main():
                          **df.mean().to_dict()})
     out = pd.DataFrame(rows)
     os.makedirs(os.path.join(OUT, "reports"), exist_ok=True)
-    path = os.path.join(OUT, "reports", f"jitter_{a.source}.csv")
+    path = os.path.join(OUT, "reports", f"jitter_{tag}.csv")
     out.to_csv(path, index=False)
-    summ = out.groupby(["workload", "algorithm", "sigma"])[["viol_request_rate", "viol_plan_rate", "f1_degradation_pct"]].mean()
+    cols = ["viol_request_rate", "viol_plan_rate", "f1_degradation_pct"]
+    summ = out.groupby(["algorithm", "sigma"])[cols].mean()
+    summ.to_csv(os.path.join(OUT, "reports", f"jitter_{tag}_summary.csv"))
     print(summ.round(4).to_string())
-    print("\nwrote", path)
+    print("\nwrote", path, "and the summary by algorithm and sigma")
 
 
 if __name__ == "__main__":
