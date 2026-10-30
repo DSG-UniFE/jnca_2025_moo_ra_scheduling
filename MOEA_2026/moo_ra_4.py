@@ -180,6 +180,23 @@ class MooRa4(IntegerProblem):
         instance_idx = (value % 18) // 3
         price_idx = value % 3
         return dc_idx, instance_idx, price_idx
+
+    def _repair_latency(self, request_location, dc_idx, latency_required):
+        """Latency repair: move to the next data center until the latency bound holds.
+
+        If no data center meets the bound (e.g. a 5 ms bound from us-east-1, whose lowest latency
+        is 5.15 ms), the request goes to the data center with the lowest latency and the residual
+        violation is counted in the latency constraint. Without this exit the loop never ended.
+        When some data center meets the bound, the choice is the same as before.
+        """
+        for _ in range(self.num_datacenters):
+            dc = self.datacenters[int(dc_idx)]
+            if self.latency_lookup[(request_location, dc)] <= latency_required:
+                return dc_idx, dc
+            dc_idx = (dc_idx + 1) % self.num_datacenters
+        dc_idx = min(range(self.num_datacenters),
+                     key=lambda k: self.latency_lookup[(request_location, self.datacenters[k])])
+        return dc_idx, self.datacenters[dc_idx]
      
     def _calculate_costs_legacy(self, solution):
         total_costs = {'On-Demand': 0, 'Reserved': 0, 'Spot': 0}
@@ -230,11 +247,8 @@ class MooRa4(IntegerProblem):
             latency = self.latency_lookup[(request_location, dc)]
             # the first requirement to check will be latency here
             # so we are going to repair the solution if the latency is not respected
-            while self.repair and latency > latency_required:
-                dc_idx = (dc_idx + 1) % self.num_datacenters
-                dc = self.datacenters[int(dc_idx)]
-                #print(dc_idx, dc, latency, latency_required)
-                latency = self.latency_lookup[(request_location, dc)]
+            if self.repair and latency > latency_required:
+                dc_idx, dc = self._repair_latency(request_location, dc_idx, latency_required)
 
             # temporary variables to keep track of the current instance
             dc_instance_key = (dc, instance, price_idx)
@@ -357,10 +371,8 @@ class MooRa4(IntegerProblem):
 
             # latency repair: move to the next data center until the bound holds
             latency = self.latency_lookup[(request_location, dc)]
-            while self.repair and latency > latency_required:
-                dc_idx = (dc_idx + 1) % self.num_datacenters
-                dc = self.datacenters[int(dc_idx)]
-                latency = self.latency_lookup[(request_location, dc)]
+            if self.repair and latency > latency_required:
+                dc_idx, dc = self._repair_latency(request_location, dc_idx, latency_required)
 
             # capacity repair: move to the next instance type until one replica fits
             instance_alg_idx = instance_idx

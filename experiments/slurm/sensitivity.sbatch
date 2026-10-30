@@ -35,4 +35,4 @@ UC=${USECASES[$((SLURM_ARRAY_TASK_ID / 2))]}
 SIZE=${SIZES[$((SLURM_ARRAY_TASK_ID % 2))]}
 
 echo "task $SLURM_ARRAY_TASK_ID: $UC$SIZE on $(hostname), $SLURM_CPUS_PER_TASK cpus"
-python experiments/run_sensitivity.py --usecases "$UC" --sizes "$SIZE" --threads "$SLURM_CPUS_PER_TASK"
+python -u experiments/run_sensitivity.py --usecases "$UC" --sizes "$SIZE" --threads "$SLURM_CPUS_PER_TASK"
