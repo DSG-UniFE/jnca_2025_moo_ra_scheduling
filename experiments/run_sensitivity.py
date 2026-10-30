@@ -15,9 +15,10 @@ Needs Julia with JuMP, Gurobi (licensed), MultiObjectiveAlgorithms, DataFrames, 
 BenchmarkTools. The figures of the original script are skipped (a stub replaces Plots, which
 does not load on Julia 1.13 on macOS); pass --plots to keep them. --no-bridges creates the model
 with add_bridges = false to lower the peak memory of the 100-request workloads; the model passed
-to Gurobi is the same (same Model fingerprint in output.txt). direct_model would save more memory
-but passes the rows in another order (different fingerprint), so time-limited runs would not be
-comparable.
+to Gurobi is the same (same Model fingerprint in output.txt). --direct uses direct_model, which
+does not keep JuMP's copy of the model and saves more memory, but passes the rows to Gurobi in
+another order (different fingerprint), so time-limited runs can differ from the default ones: its
+results go to experiments/results/sensitivity_direct/ and do not overwrite the others.
 """
 import argparse
 import os
@@ -29,6 +30,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JL = os.path.join(ROOT, "MO-ILP_Gpu_added.jl")
 OUT = os.path.join(ROOT, "experiments", "results", "sensitivity")
+OUT_DIRECT = OUT + "_direct"
 
 
 PLOTS_STUB = '''module Plots  # stand-in for the plotting package: the sweep only needs the numbers
@@ -40,7 +42,7 @@ end
 using .Plots'''
 
 
-def patch(src, usecase, gap, tlimit, results_dir, plots=False, threads=0, no_bridges=False):
+def patch(src, usecase, gap, tlimit, results_dir, plots=False, threads=0, no_bridges=False, direct=False):
     def sub(pattern, repl, text):
         new, n = re.subn(pattern, lambda m: repl, text, flags=re.M)
         if n != 1:
@@ -50,7 +52,9 @@ def patch(src, usecase, gap, tlimit, results_dir, plots=False, threads=0, no_bri
     s = src
     if not plots:
         s = sub(r"^using Plots$", PLOTS_STUB, s)
-    if no_bridges:
+    if direct:
+        s = sub(r"model = Model\(Gurobi\.Optimizer\)", "model = direct_model(Gurobi.Optimizer())", s)
+    elif no_bridges:
         s = sub(r"model = Model\(Gurobi\.Optimizer\)", "model = Model(Gurobi.Optimizer; add_bridges = false)", s)
     s = sub(r"^mip_gaps = \[0\.0\].*$", f"mip_gaps = [{gap}]", s)
     s = sub(r"TimeLimitSec\(\), 1000\)", f"TimeLimitSec(), {tlimit})", s)
@@ -75,6 +79,8 @@ def main():
     p.add_argument("--threads", type=int, default=int(os.environ.get("SLURM_CPUS_PER_TASK", 0)),
                    help="Gurobi Threads (0 = Gurobi default); defaults to SLURM_CPUS_PER_TASK when set")
     p.add_argument("--no-bridges", action="store_true", help="create the model with add_bridges = false (less memory)")
+    p.add_argument("--direct", action="store_true",
+                   help="create the model with direct_model (least memory, other row order); results in sensitivity_direct/")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
 
@@ -84,18 +90,18 @@ def main():
             case = f"{uc}{size}"
             for tl in a.time_limits:
                 for gap in a.gaps:
-                    d = os.path.join(OUT, case, f"tl{tl}_gap{gap}")
+                    d = os.path.join(OUT_DIRECT if a.direct else OUT, case, f"tl{tl}_gap{gap}")
                     if os.path.exists(os.path.join(d, f"results_usecase_{case}.csv")):
                         print("skip (done):", d)
                         continue
                     print("run:", case, "time limit", tl, "gap", gap)
                     if a.dry_run:
-                        patch(src, case, gap, tl, d, a.plots, a.threads, a.no_bridges)  # still validates the substitutions
+                        patch(src, case, gap, tl, d, a.plots, a.threads, a.no_bridges, a.direct)  # still validates the substitutions
                         continue
                     os.makedirs(d, exist_ok=True)
                     script = os.path.join(d, "run.jl")
                     with open(script, "w") as f:
-                        f.write(patch(src, case, gap, tl, d, a.plots, a.threads, a.no_bridges))
+                        f.write(patch(src, case, gap, tl, d, a.plots, a.threads, a.no_bridges, a.direct))
                     with open(os.path.join(d, "output.txt"), "w") as log:
                         subprocess.run([a.julia, script], cwd=d, stdout=log, stderr=subprocess.STDOUT, check=False)
 
