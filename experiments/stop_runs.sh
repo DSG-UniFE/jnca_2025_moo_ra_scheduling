@@ -9,11 +9,11 @@ pkill -f run_moea.py
 sleep 3
 find experiments/results \( -name "*.lock" -o -name "*.tmp" \) -delete 2>/dev/null
 echo "workers left: $(pgrep -f run_moea.py | wc -l)"
-for v in MOEA_2026 MOEA; do
+for v in ${VERSIONS:-MOEA_2026}; do
   MOEA_DIR=$v "$PY" experiments/run_moea.py large --seeds "${SEEDS:-3}" --status | head -4
 done
 if [ -n "$PACK" ]; then
-  for v in MOEA MOEA_2026; do MOEA_DIR=$v "$PY" experiments/run_moea.py report large > /dev/null 2>&1 || true; done
+  for v in ${VERSIONS:-MOEA_2026}; do MOEA_DIR=$v "$PY" experiments/run_moea.py report large > /dev/null 2>&1 || true; done
   "$PY" experiments/pack_results.py --out "$HOME/Desktop/jnca_results" --exp large | tail -3
   "$PY" experiments/pack_results.py --out "$HOME/Desktop/jnca_results" --exp large --full | tail -3
 fi

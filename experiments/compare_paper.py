@@ -61,7 +61,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--version", default="MOEA_2026")
     a = ap.parse_args()
-    res = os.path.join(ROOT, "experiments", "results", a.version)
+    res = os.environ.get("RESULTS_DIR") or os.path.join(ROOT, "experiments", "results", a.version)
     runs = pd.read_csv(os.path.join(res, "reports", "paper_per_run.csv"))
 
     # ---- 1. Dominance-based Gap, 3 objectives

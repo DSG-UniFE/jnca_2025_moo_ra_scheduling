@@ -20,7 +20,9 @@ Examples (from the repository root):
     python experiments/run_moea.py report large
 """
 import argparse
+import functools
 import glob
+import hashlib
 import json
 import os
 import shutil
@@ -77,7 +79,7 @@ def run_one(problem_cls, sfile, kwargs, alg, seed, evals, processes, out_json, o
     feasible = lambda s: all(c >= 0 for c in s.constraints) and sum(abs(c) for c in s.constraints) == 0
     rec = {
         "algorithm": alg, "seed": seed, "evals": evals, "repair": kwargs.get("repair", True),
-        "service_file": os.path.basename(sfile), "objectives": list(objectives), "moea": MOEA_NAME, "num_requests": problem.num_requests,
+        "service_file": os.path.basename(sfile), "service_sha1": file_sha1(sfile), "objectives": list(objectives), "moea": MOEA_NAME, "num_requests": problem.num_requests,
         "num_replicas": problem.num_replicas, "time_s": elapsed,
         "final_population_size": len(result),
         "feasible_share_population": float(np.mean([feasible(s) for s in result])) if result else 0.0,
@@ -112,15 +114,35 @@ def build_tasks(exp, variants, sizes, usecases, algs, seeds, objective_sets):
     return tasks
 
 
+@functools.lru_cache(maxsize=None)
+def file_sha1(path):
+    with open(path, "rb") as fh:
+        return hashlib.sha1(fh.read()).hexdigest()
+
+
+# Large-scale workloads whose request files were regenerated after the first runs (their latency bounds
+# were impossible); results without a stored file hash are not trusted for these.
+REGENERATED = {("large", "iiot250"), ("large", "iiot500"), ("large", "iiot1000")}
+
+
 def is_done(task, evals):
-    """A result counts only if it was produced with the requested number of evaluations."""
+    """A result counts if it has the requested number of evaluations and was made with the current
+    request file (runs record its hash; older runs of the regenerated workloads do not count)."""
     if not os.path.exists(task["out"]):
         return False
     try:
         with open(task["out"]) as fh:
-            return json.load(fh).get("evals") == evals
+            rec = json.load(fh)
     except (OSError, ValueError):
         return False
+    if rec.get("evals") != evals:
+        return False
+    if "uc" in task:
+        sha = rec.get("service_sha1")
+        if sha is None:
+            return (task["exp"], task["wl"]) not in REGENERATED
+        return sha == file_sha1(service_file(task["uc"], task["size"]))
+    return True
 
 
 def reuse_from_ablation(task, evals):
@@ -177,26 +199,41 @@ FALLBACK_S_PER_REQUEST = {"MSPSO": 4.0, "default": 1.0}
 
 
 def rate_table():
-    """Median seconds per request and 50,000 evaluations of every algorithm, from the runs on disk."""
-    rates = {}
-    files = glob.glob(os.path.join(OUT, "*", "*", "*", "seed*", "*.json"))
-    for f in files[:400]:
-        try:
-            with open(f) as fh:
-                r = json.load(fh)
-        except (OSError, ValueError):
+    """Median seconds per request and 50,000 evaluations for every (algorithm, workload size), from the
+    runs on disk (up to 3 runs per bucket, so that the large workloads are always represented)."""
+    buckets = {}
+    for f in sorted(glob.glob(os.path.join(OUT, "*", "*", "*", "seed*", "*.json"))):
+        parts = f.split(os.sep)
+        digits = "".join(ch for ch in parts[-3].split("_")[0] if ch.isdigit())
+        if not digits or int(digits) < 20:
             continue
-        n, evals = r.get("num_requests"), r.get("evals")
-        if n and evals and n >= 20:
-            rates.setdefault(r["algorithm"], []).append(r["time_s"] / n * 50_000 / evals)
-    return {a: float(np.median(v)) for a, v in rates.items()}
+        key = (os.path.basename(f)[:-5], int(digits))
+        if len(buckets.setdefault(key, [])) < 3:
+            buckets[key].append(f)
+    rates = {}
+    for (alg, size), files in buckets.items():
+        vals = []
+        for f in files:
+            try:
+                with open(f) as fh:
+                    r = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if r.get("num_requests") and r.get("evals"):
+                vals.append(r["time_s"] / r["num_requests"] * 50_000 / r["evals"])
+        if vals:
+            rates.setdefault(alg, {})[size] = float(np.median(vals))
+    return rates
 
 
 def estimate_seconds(task, evals, rates):
-    """Estimated duration of one run (linear in the number of requests and evaluations)."""
+    """Estimated duration of one run (linear in the number of requests and evaluations); the rate of
+    the closest workload size seen on disk is used, then the fallback table."""
     n = task["size"] if isinstance(task["size"], int) else 10
-    base = rates.get(task["alg"])
-    if base is None:
+    by_size = rates.get(task["alg"])
+    if by_size:
+        base = by_size[min(by_size, key=lambda sz: abs(sz - n))]
+    else:
         base = FALLBACK_S_PER_REQUEST.get(task["alg"], FALLBACK_S_PER_REQUEST["default"])
         if MOEA_NAME == "MOEA":
             base *= 0.65
@@ -217,7 +254,7 @@ def estimate(exp, variants, sizes, usecases, algs, seeds, evals, objective_sets,
     todo = [t for t in tasks if not is_done(t, evals)]
     secs = [estimate_seconds(t, evals, rates) for t in todo]
     print(f"{MOEA_NAME} {exp}: {len(todo)} of {len(tasks)} runs left; "
-          f"rates from {len(rates)} algorithms on disk, the rest from fallbacks")
+          f"rates from {sum(len(v) for v in rates.values())} (algorithm, size) groups on disk, the rest from fallbacks")
     print(f"  total CPU time {sum(secs) / 3600:.1f} h; about {sum(secs) / 3600 / workers * 1.15:.1f} h wall with {workers} workers (+15% for imbalance)")
     if secs:
         print(f"  longest single run {max(secs) / 60:.0f} min (a run in progress is lost if you stop it)")

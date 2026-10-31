@@ -24,7 +24,7 @@ iiot,preprocessing,4,7,4,21,eu-west-2,1,12
 iiot,anomaly,3,1,6,37,us-west-1,1,14
 iiot,anomaly,2,6,4,36,ap-south-1,5,14
 iiot,anomaly,4,1,4,42,ap-northeast-3,6,12
-iiot,preprocessing,1,4,6,13,us-east-1,5,5
+iiot,preprocessing,1,4,6,13,us-east-1,5,6
 iiot,anomaly,4,7,3,41,ap-south-1,6,7
 iiot,datacollection,4,4,3,32,us-east-1,6,14
 iiot,anomaly,1,4,3,44,eu-west-2,6,12
@@ -126,7 +126,7 @@ iiot,anomaly,3,4,3,47,us-east-1,6,12
 iiot,preprocessing,4,2,5,22,eu-south-1,5,8
 iiot,preprocessing,2,2,6,46,us-east-1,6,8
 iiot,datacollection,4,3,3,38,eu-south-1,4,11
-iiot,anomaly,2,4,3,47,us-east-1,2,5
+iiot,anomaly,2,4,3,47,us-east-1,2,6
 iiot,preprocessing,3,8,4,32,us-east-1,1,9
 iiot,datacollection,2,7,6,23,ap-south-1,5,13
 iiot,preprocessing,4,3,4,12,eu-south-1,1,11
@@ -175,7 +175,7 @@ iiot,anomaly,3,1,6,38,ap-northeast-3,5,9
 iiot,preprocessing,4,4,3,37,eu-south-1,2,7
 iiot,datacollection,4,3,5,43,ap-northeast-3,3,10
 iiot,preprocessing,3,4,6,23,eu-south-1,1,11
-iiot,preprocessing,4,0,6,28,us-east-1,6,5
+iiot,preprocessing,4,0,6,28,us-east-1,6,11
 iiot,preprocessing,4,6,3,17,eu-west-2,5,14
 iiot,datacollection,2,0,3,11,us-east-1,3,7
 iiot,preprocessing,2,6,3,47,ap-northeast-3,4,15
@@ -206,7 +206,7 @@ iiot,datacollection,4,8,2,13,ap-northeast-3,4,8
 iiot,datacollection,3,7,6,38,ap-northeast-3,3,7
 iiot,preprocessing,2,1,4,27,us-east-1,5,7
 iiot,anomaly,2,1,6,47,us-east-1,1,14
-iiot,anomaly,1,2,5,31,us-east-1,5,5
+iiot,anomaly,1,2,5,31,us-east-1,5,8
 iiot,anomaly,4,5,4,12,eu-south-1,4,5
 iiot,anomaly,4,7,3,14,eu-west-2,1,12
 iiot,datacollection,2,6,5,21,ap-south-1,4,15
@@ -319,7 +319,7 @@ iiot,preprocessing,3,1,5,40,ap-south-1,2,8
 iiot,preprocessing,4,7,6,49,ap-south-1,3,7
 iiot,preprocessing,2,0,6,25,eu-west-2,4,9
 iiot,anomaly,3,2,2,37,ap-south-1,4,10
-iiot,datacollection,2,8,2,34,us-east-1,3,5
+iiot,datacollection,2,8,2,34,us-east-1,3,7
 iiot,preprocessing,3,8,5,47,us-east-1,2,10
 iiot,anomaly,3,2,3,13,us-east-1,5,9
 iiot,preprocessing,2,0,2,15,us-west-1,1,10
@@ -338,7 +338,7 @@ iiot,datacollection,2,3,4,50,ap-south-1,3,5
 iiot,anomaly,2,7,5,34,ap-northeast-3,5,11
 iiot,datacollection,1,1,3,23,us-east-1,5,10
 iiot,preprocessing,1,2,3,45,eu-south-1,4,5
-iiot,datacollection,1,1,6,36,us-east-1,4,5
+iiot,datacollection,1,1,6,36,us-east-1,4,10
 iiot,datacollection,2,8,3,41,ap-south-1,6,15
 iiot,preprocessing,1,6,4,50,eu-south-1,2,6
 iiot,preprocessing,2,5,4,23,eu-south-1,2,14
@@ -383,7 +383,7 @@ iiot,anomaly,3,7,5,22,ap-south-1,5,15
 iiot,datacollection,2,0,4,10,eu-south-1,5,9
 iiot,datacollection,3,2,2,16,eu-west-2,3,8
 iiot,datacollection,1,4,2,18,us-east-1,3,9
-iiot,preprocessing,3,3,2,29,us-east-1,3,5
+iiot,preprocessing,3,3,2,29,us-east-1,3,12
 iiot,datacollection,3,6,5,48,eu-south-1,2,9
 iiot,anomaly,2,8,3,46,eu-west-2,1,14
 iiot,preprocessing,4,5,4,33,eu-south-1,6,15
@@ -411,7 +411,7 @@ iiot,anomaly,1,3,3,50,us-west-1,1,15
 iiot,anomaly,2,0,6,20,ap-south-1,6,9
 iiot,preprocessing,1,2,2,20,eu-west-2,6,13
 iiot,anomaly,1,6,4,36,eu-south-1,3,15
-iiot,anomaly,2,5,3,28,us-east-1,2,5
+iiot,anomaly,2,5,3,28,us-east-1,2,6
 iiot,datacollection,3,6,5,48,eu-south-1,3,10
 iiot,anomaly,1,3,6,42,ap-northeast-3,3,5
 iiot,datacollection,3,3,4,41,us-west-1,3,8
@@ -424,7 +424,7 @@ iiot,datacollection,3,6,2,28,us-west-1,3,12
 iiot,datacollection,3,0,4,48,us-east-1,5,10
 iiot,datacollection,3,6,2,13,ap-northeast-3,3,5
 iiot,anomaly,4,6,4,15,ap-northeast-3,1,10
-iiot,anomaly,3,7,2,21,us-east-1,3,5
+iiot,anomaly,3,7,2,21,us-east-1,3,15
 iiot,preprocessing,1,0,4,26,eu-south-1,2,12
 iiot,anomaly,1,4,3,33,ap-south-1,5,11
 iiot,preprocessing,4,2,4,24,eu-south-1,2,15
@@ -435,7 +435,7 @@ iiot,anomaly,2,1,3,21,us-east-1,3,9
 iiot,preprocessing,1,6,6,26,ap-south-1,2,13
 iiot,preprocessing,2,5,6,10,us-east-1,6,13
 iiot,datacollection,4,3,5,39,eu-south-1,2,15
-iiot,datacollection,4,4,5,16,us-east-1,5,5
+iiot,datacollection,4,4,5,16,us-east-1,5,10
 iiot,datacollection,3,7,4,22,ap-northeast-3,1,10
 iiot,datacollection,4,5,3,25,us-east-1,6,15
 iiot,datacollection,1,6,2,42,ap-northeast-3,5,6

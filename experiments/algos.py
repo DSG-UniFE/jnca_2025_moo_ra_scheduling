@@ -18,7 +18,7 @@ for _name, _type in (('int', int), ('float', float)):
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MOEA_NAME = os.environ.get("MOEA_DIR", "MOEA_2026")  # "MOEA" reproduces the code used in the paper
 MOEA_DIR = os.path.join(ROOT, MOEA_NAME)
-RESULTS = os.path.join(ROOT, "experiments", "results", MOEA_NAME)  # one results tree per code version
+RESULTS = os.environ.get("RESULTS_DIR") or os.path.join(ROOT, "experiments", "results", MOEA_NAME)  # one results tree per code version; RESULTS_DIR points at another tree
 sys.path.insert(0, MOEA_DIR)
 
 from jmetal.algorithm.multiobjective.mocell import MOCell
