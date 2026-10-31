@@ -18,7 +18,8 @@ with add_bridges = false to lower the peak memory of the 100-request workloads; 
 to Gurobi is the same (same Model fingerprint in output.txt). --direct uses direct_model, which
 does not keep JuMP's copy of the model and saves more memory, but passes the rows to Gurobi in
 another order (different fingerprint), so time-limited runs can differ from the default ones: its
-results go to experiments/results/sensitivity_direct/ and do not overwrite the others.
+results go to experiments/results/sensitivity_direct/ and do not overwrite the others. --out
+writes the results to another directory (e.g. runs made on another machine).
 """
 import argparse
 import os
@@ -81,16 +82,18 @@ def main():
     p.add_argument("--no-bridges", action="store_true", help="create the model with add_bridges = false (less memory)")
     p.add_argument("--direct", action="store_true",
                    help="create the model with direct_model (least memory, other row order); results in sensitivity_direct/")
+    p.add_argument("--out", help="results directory (default experiments/results/sensitivity, or sensitivity_direct with --direct)")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
 
+    out = os.path.abspath(a.out) if a.out else OUT_DIRECT if a.direct else OUT
     src = open(JL).read()
     for uc in a.usecases:
         for size in a.sizes:
             case = f"{uc}{size}"
             for tl in a.time_limits:
                 for gap in a.gaps:
-                    d = os.path.join(OUT_DIRECT if a.direct else OUT, case, f"tl{tl}_gap{gap}")
+                    d = os.path.join(out, case, f"tl{tl}_gap{gap}")
                     if os.path.exists(os.path.join(d, f"results_usecase_{case}.csv")):
                         print("skip (done):", d)
                         continue
